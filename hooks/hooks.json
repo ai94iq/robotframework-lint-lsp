@@ -1,0 +1,17 @@
+{
+  "description": "Apply safe robocop fixes to .robot and .resource files after each edit",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "robotframework-lint-autofix",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

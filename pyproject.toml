@@ -20,6 +20,7 @@ dev = ["pytest==9.2.0"]
 
 [project.scripts]
 robotframework-lint-lsp = "robotframework_lint.lsp:main"
+robotframework-lint-autofix = "robotframework_lint.autofix:main"
 
 [project.entry-points."robocop.plugins"]
 robotframework_lint = "robotframework_lint.rules"
