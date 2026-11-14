@@ -1,0 +1,83 @@
+"""LSP server: raw stdio JSON-RPC roundtrip plus token controls."""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+from robotframework_lint.lsp import Settings, lint_text
+
+SAMPLES = Path(__file__).parent / "samples"
+NOISY = "*** Test Cases ***\n" + "".join(
+    f"test {i}\n    log  x    \n    Sleep    1s\n" for i in range(40)
+)
+
+
+def _frame(payload: dict) -> bytes:
+    body = json.dumps(payload).encode()
+    return f"Content-Length: {len(body)}\r\n\r\n".encode() + body
+
+
+def _read_messages(stream, until_method: str) -> dict:
+    while True:
+        length = 0
+        while (line := stream.readline().strip()):
+            if line.lower().startswith(b"content-length"):
+                length = int(line.split(b":")[1])
+        message = json.loads(stream.read(length))
+        if message.get("method") == until_method:
+            return message
+
+
+def test_stdio_roundtrip_publishes_capped_diagnostics():
+    uri = (SAMPLES / "arg_names_deprecated.robot").resolve().as_uri()
+    text = (SAMPLES / "arg_names_deprecated.robot").read_text(encoding="utf-8")
+    proc = subprocess.Popen([sys.executable, "-m", "robotframework_lint.lsp"],
+                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    try:
+        proc.stdin.write(_frame({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+            "processId": None, "rootUri": None, "capabilities": {},
+            "initializationOptions": {"maxDiagnostics": 2, "minSeverity": "info"}}}))
+        proc.stdin.write(_frame({"jsonrpc": "2.0", "method": "initialized", "params": {}}))
+        proc.stdin.write(_frame({"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {
+            "textDocument": {"uri": uri, "languageId": "robotframework", "version": 1, "text": text}}}))
+        proc.stdin.flush()
+        published = _read_messages(proc.stdout, "textDocument/publishDiagnostics")
+    finally:
+        proc.kill()
+    diagnostics = published["params"]["diagnostics"]
+    assert len(diagnostics) == 2, diagnostics
+    for diag in diagnostics:
+        assert set(diag) <= {"range", "message", "severity", "code", "source"}
+        assert diag["message"].startswith(diag["code"] + " ")
+
+
+def test_our_rule_reported_with_line():
+    text = (SAMPLES / "arg_names_deprecated.robot").read_text(encoding="utf-8")
+    found = lint_text(text, Settings(max_diagnostics=100, min_severity="info", select=["RFL006"]))
+    assert {d.range.start.line for d in found} == {6, 7, 8, 9}
+    assert all(d.code == "RFL006" and len(d.message) <= 120 for d in found)
+
+
+def test_cap_default_twenty():
+    assert len(lint_text(NOISY, Settings(min_severity="info"))) == 20
+
+
+def test_severity_floor_filters():
+    info = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info"))
+    errors = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="error"))
+    assert len(errors) < len(info)
+    assert all(d.severity == 1 for d in errors)
+
+
+def test_dedup_identical_findings():
+    found = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info"))
+    keys = [(d.range.start.line, d.code, d.message) for d in found]
+    assert len(keys) == len(set(keys))
+
+
+def test_settings_from_options_defaults_and_overrides():
+    assert Settings.from_options(None) == Settings()
+    s = Settings.from_options({"maxDiagnostics": 5, "minSeverity": "ERROR", "ignore": ["DOC01"]})
+    assert (s.max_diagnostics, s.min_severity, s.ignore) == (5, "error", ["DOC01"])
+    assert Settings.from_options({"maxDiagnostics": -1, "minSeverity": "bogus"}) == Settings()

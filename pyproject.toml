@@ -12,10 +12,14 @@ requires-python = ">=3.10"
 dependencies = [
     "robotframework==7.5.1",
     "robotframework-robocop==9.4.0",
+    "pygls==2.1.1",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest==9.2.0"]
+
+[project.scripts]
+robotframework-lint-lsp = "robotframework_lint.lsp:main"
 
 [project.entry-points."robocop.plugins"]
 robotframework_lint = "robotframework_lint.rules"

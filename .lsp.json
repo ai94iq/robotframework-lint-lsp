@@ -1,0 +1,16 @@
+{
+  "robotframework": {
+    "command": "robotframework-lint-lsp",
+    "args": [],
+    "extensionToLanguage": {
+      ".robot": "robotframework",
+      ".resource": "robotframework"
+    },
+    "initializationOptions": {
+      "maxDiagnostics": 20,
+      "minSeverity": "warning",
+      "select": [],
+      "ignore": []
+    }
+  }
+}

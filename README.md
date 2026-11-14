@@ -45,6 +45,21 @@ definitions. It reports a term only when RF parsed it as a header or setting,
 that is, when the file's language is French or Finnish (`language: fr` or
 `language: fi` in the file, or `--language`).
 
+## LSP server (Claude Code and other agents)
+
+`robotframework-lint-lsp` is a stdio language server. It lints the open
+buffer in process with the robocop defaults plus these rules, on open, save
+and change (debounced 0.4 s). Output is kept small for AI agents:
+
+- one line per finding: `RULEID message`, at most 120 characters
+- at most 20 findings per file (`maxDiagnostics`)
+- warnings and errors only by default (`minSeverity`: info, warning, error)
+- identical findings on one line reported once; no related information
+
+Settings go in `initializationOptions`: `maxDiagnostics`, `minSeverity`,
+`select`, `ignore`. For Claude Code, copy `.lsp.json` from this repo into
+your plugin; it maps `.robot` and `.resource` to `robotframework`.
+
 ## Tests
 
 ```bash
