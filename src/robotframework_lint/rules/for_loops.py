@@ -36,7 +36,7 @@ class ForInZipWithoutModeRule(Rule):
     rule_id = "RFL001"
     message = "FOR IN ZIP without mode=; set STRICT, SHORTEST or LONGEST"
     severity = RuleSeverity.WARNING
-    added_in_version = "9.4.0"
+    added_in_version = "0.1.0"
 
 
 class ForLoopChecker(VisitorChecker):
