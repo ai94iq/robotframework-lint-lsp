@@ -123,3 +123,36 @@ def test_rules_load_once_with_pyproject_and_entry_point(monkeypatch):
     raw = _run_robocop(text, ".robot", Settings(min_severity="info", select=["RFL006"]))
     on_line = [d for d in raw if d.range.start.line - 1 == 6]
     assert len(on_line) == 1, [(d.rule.rule_id, d.message) for d in on_line]
+
+
+NON_ASCII = "*** Test Cases ***\nT\n    Log    ä😀    \n"
+
+
+def _trailing_space_start(encoding: str) -> int:
+    """Open NON_ASCII under one position encoding; return SPC01's start column."""
+    proc = subprocess.Popen([sys.executable, "-m", "robotframework_lint.lsp"],
+                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    try:
+        proc.stdin.write(_frame({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+            "processId": None, "rootUri": None, "capabilities": {"general": {"positionEncodings": [encoding]}},
+            "initializationOptions": {"minSeverity": "info"}}}))
+        proc.stdin.write(_frame({"jsonrpc": "2.0", "method": "initialized", "params": {}}))
+        proc.stdin.write(_frame({"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {
+            "textDocument": {"uri": "file:///x.robot", "languageId": "robotframework", "version": 1,
+                             "text": NON_ASCII}}}))
+        proc.stdin.flush()
+        published = _read_messages(proc.stdout, "textDocument/publishDiagnostics")
+    finally:
+        proc.kill()
+    (spc,) = [d for d in published["params"]["diagnostics"] if d["code"] == "SPC01"]
+    return spc["range"]["start"]["character"]
+
+
+def test_diagnostic_columns_utf16():
+    # "    Log    ä😀" is 13 code points; the emoji is 2 utf-16 units
+    assert _trailing_space_start("utf-16") == 14
+
+
+def test_diagnostic_columns_utf8():
+    # same prefix is 17 utf-8 bytes (ä 2, emoji 4)
+    assert _trailing_space_start("utf-8") == 17
