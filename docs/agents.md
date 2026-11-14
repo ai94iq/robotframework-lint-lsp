@@ -22,8 +22,8 @@ Code").
 
 ```bash
 python -m venv .venv
-.venv/Scripts/python -m pip install git+https://github.com/ai94iq/robotframework-lint   # Windows
-.venv/bin/python -m pip install git+https://github.com/ai94iq/robotframework-lint       # Linux, macOS
+.venv/Scripts/python -m pip install git+https://github.com/ai94iq/robotframework-lint@v0.1.0   # Windows
+.venv/bin/python -m pip install git+https://github.com/ai94iq/robotframework-lint@v0.1.0       # Linux, macOS
 ```
 
 This installs two commands. Put the venv's `Scripts` or `bin` folder on

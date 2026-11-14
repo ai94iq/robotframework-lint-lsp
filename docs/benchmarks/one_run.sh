@@ -6,6 +6,8 @@ REPO="$(cd "$AB/../.." && pwd)"
 export PATH="$REPO/.venv/Scripts:$REPO/.venv/bin:$PATH"
 export CLAUDE_CODE_DISABLE_CLAUDE_MDS=1 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
 PROMPT="$(cat "$AB/task.txt")"
+case "$1" in lint|mcp|nolint) ;; *) echo "arm must be lint, mcp or nolint" >&2; exit 2 ;; esac
+case "$2" in ""|*[!0-9]*) echo "run must be a number" >&2; exit 2 ;; esac
 dir="$AB/${RUNS:-runs}/$1_$2"
 rm -rf "$dir" && mkdir -p "$dir"
 case "$1" in

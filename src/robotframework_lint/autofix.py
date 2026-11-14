@@ -37,7 +37,8 @@ def fix_file(path: Path) -> None:
         fixed = copy.read_text(encoding="utf-8")  # robocop writes the OS line ending
     if "\r\n" in original:
         fixed = fixed.replace("\n", "\r\n")
-    if fixed != original:
+    # The agent may have written again while robocop ran; never overwrite the newer text.
+    if fixed != original and path.read_text(encoding="utf-8", newline="") == original:
         path.write_text(fixed, encoding="utf-8", newline="")
 
 

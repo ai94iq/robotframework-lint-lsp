@@ -22,6 +22,7 @@ from .navigation import WorkspaceIndex
 
 RULES_DIR = Path(__file__).parent / "rules"
 MAX_MESSAGE = 120
+MAX_LINT_BYTES = 1_000_000
 DEBOUNCE_SECONDS = 0.4
 SEVERITY_ORDER = {"info": 0, "warning": 1, "error": 2}
 LSP_SEVERITY = {
@@ -79,7 +80,9 @@ def _run_robocop(text: str, suffix: str, settings: Settings) -> list:
             return_result=True,
         )
         config = RawConfig(sources=[str(path)], linter=linter_config, silent=True)
-        manager = ConfigManager(sources=[str(path)], overwrite_config=config)
+        # A robocop or pyproject file above the temp dir must not pick rules or rule files.
+        manager = ConfigManager(sources=[str(path)], root=Path(tmp), ignore_file_config=True,
+                                overwrite_config=config)
         linter = RobocopLinter(manager)
         return list(linter.run_check(SourceFile(path=path, config=manager.default_config)))
 
@@ -166,6 +169,10 @@ class RflintServer(LanguageServer):
     def publish(self, uri: str) -> None:
         doc = self.workspace.get_text_document(uri)
         suffix = ".resource" if uri.endswith(".resource") else ".robot"
+        if len(doc.source) > MAX_LINT_BYTES:  # a generated blob would hold the event loop
+            self.text_document_publish_diagnostics(
+                types.PublishDiagnosticsParams(uri=uri, version=doc.version, diagnostics=[]))
+            return
         try:
             self.index.update(uri, doc.source)
             diagnostics = lint_text(doc.source, self.settings, suffix)

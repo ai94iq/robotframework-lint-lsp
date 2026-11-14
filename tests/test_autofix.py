@@ -73,3 +73,19 @@ def test_two_robocop_runs_fit_hook_timeout():
     hook = json.loads((Path(__file__).parents[1] / "hooks" / "hooks.json").read_text(encoding="utf-8"))
     budget = hook["hooks"]["PostToolUse"][0]["hooks"][0]["timeout"]
     assert 2 * TIMEOUT_S < budget
+
+
+def test_fix_skips_file_changed_meanwhile(tmp_path, monkeypatch):
+    from robotframework_lint import autofix
+
+    path = tmp_path / "t.robot"
+    path.write_text(LEGACY, encoding="utf-8")
+    real = autofix.subprocess.run
+
+    def edit_during_run(*args, **kwargs):
+        path.write_text("NEWER", encoding="utf-8")
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(autofix.subprocess, "run", edit_during_run)
+    fix_file(path)
+    assert path.read_text(encoding="utf-8") == "NEWER"

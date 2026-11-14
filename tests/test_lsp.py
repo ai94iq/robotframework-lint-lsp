@@ -240,3 +240,27 @@ def test_close_cancels_pending_publish(monkeypatch):
 
     asyncio.run(scenario())
     assert calls == []
+
+
+def test_parent_config_cannot_steer_lint(tmp_path, monkeypatch):
+    import tempfile
+
+    (tmp_path / "pyproject.toml").write_text('[tool.robocop.lint]\nignore = ["*"]\n')
+    (tmp_path / "t").mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path / "t"))
+    assert lint_text(NOISY, Settings())
+
+
+def test_huge_buffer_skips_lint(monkeypatch):
+    from types import SimpleNamespace
+
+    from robotframework_lint import lsp
+
+    monkeypatch.setattr(lsp, "MAX_LINT_BYTES", 10)
+    sent = []
+    doc = SimpleNamespace(source=NOISY, version=1, lines=NOISY.splitlines(True))
+    ls = SimpleNamespace(workspace=SimpleNamespace(get_text_document=lambda u: doc), settings=Settings(),
+                         index=SimpleNamespace(update=lambda *a: None), window_log_message=lambda p: None,
+                         text_document_publish_diagnostics=sent.append)
+    lsp.RflintServer.publish(ls, "file:///x.robot")
+    assert sent[0].diagnostics == []
