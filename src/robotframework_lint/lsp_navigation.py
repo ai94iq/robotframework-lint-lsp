@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import url2pathname
@@ -14,14 +15,27 @@ from .navigation import Location, WorkspaceIndex, document_symbols
 MAX_FILES = 2000
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", "results"}
 SUFFIXES = {".robot", ".resource"}
+# A generated or binary file posing as .robot must not fill memory; open files still lint.
+MAX_BYTES = 1_000_000
 SYMBOL_KIND = {"test": types.SymbolKind.Method, "keyword": types.SymbolKind.Function,
                "variable": types.SymbolKind.Variable}
 
 
 def _robot_files(root: Path):
-    for path in root.rglob("*"):
-        if path.suffix in SUFFIXES and not SKIP_DIRS.intersection(path.relative_to(root).parts):
-            yield path
+    """Prunes skipped dirs before descending and never follows links out of the tree."""
+    stack = [root]
+    while stack:
+        try:
+            entries = list(os.scandir(stack.pop()))
+        except OSError:
+            continue
+        for entry in entries:
+            if entry.is_symlink():
+                continue
+            if entry.is_dir() and entry.name not in SKIP_DIRS:
+                stack.append(Path(entry.path))
+            elif entry.is_file() and Path(entry.name).suffix in SUFFIXES and entry.stat().st_size <= MAX_BYTES:
+                yield Path(entry.path)
 
 
 def scan_workspace(index: WorkspaceIndex, root_uri: str | None) -> None:

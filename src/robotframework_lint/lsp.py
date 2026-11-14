@@ -216,6 +216,9 @@ async def on_change(ls: RflintServer, params: types.DidChangeTextDocumentParams)
 
 @server.feature(types.TEXT_DOCUMENT_DID_CLOSE)
 def on_close(ls: RflintServer, params: types.DidCloseTextDocumentParams) -> None:
+    pending = ls.pending.pop(params.text_document.uri, None)
+    if pending:
+        pending.cancel()  # a late publish would bring back diagnostics for a closed file
     ls.text_document_publish_diagnostics(types.PublishDiagnosticsParams(uri=params.text_document.uri, diagnostics=[]))
 
 

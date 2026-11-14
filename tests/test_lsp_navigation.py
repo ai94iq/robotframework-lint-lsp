@@ -81,3 +81,21 @@ def test_utf8_columns_count_bytes():
 
 def test_utf16_columns_count_code_units():
     assert _call_site("utf-16", 15) == (1, 15)
+
+
+def test_scan_skips_ignored_dirs_and_huge_files(tmp_path, monkeypatch):
+    from robotframework_lint import lsp_navigation
+    from robotframework_lint.navigation import WorkspaceIndex
+
+    (tmp_path / "node_modules").mkdir()
+    (tmp_path / "node_modules" / "x.robot").write_text("*** Keywords ***\nHidden\n    No Operation\n")
+    (tmp_path / "big.robot").write_text("*** Keywords ***\nBig\n    No Operation\n" + "#" * 2000)
+    (tmp_path / "ok.robot").write_text("*** Keywords ***\nShown\n    No Operation\n")
+    monkeypatch.setattr(lsp_navigation, "MAX_BYTES", 1000)
+    visited = []
+    real = lsp_navigation.os.scandir
+    monkeypatch.setattr(lsp_navigation.os, "scandir", lambda p: visited.append(Path(p).name) or real(p))
+    index = WorkspaceIndex()
+    lsp_navigation.scan_workspace(index, tmp_path.as_uri())
+    assert "node_modules" not in visited
+    assert index.find("Shown") and not index.find("Big") and not index.find("Hidden")

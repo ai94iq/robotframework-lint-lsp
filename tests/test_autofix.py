@@ -57,3 +57,19 @@ def test_hook_survives_bad_input():
 def _run_hook(payload: dict, cwd=None) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, "-m", "robotframework_lint.autofix"], cwd=cwd,
                           input=json.dumps(payload), capture_output=True, text=True, timeout=120)
+
+
+def test_fix_file_keeps_lf_line_endings(tmp_path):
+    path = tmp_path / "t.robot"
+    path.write_bytes(LEGACY.encode("utf-8"))
+    fix_file(path)
+    assert b"\r\n" not in path.read_bytes()
+
+
+def test_two_robocop_runs_fit_hook_timeout():
+    from pathlib import Path
+
+    from robotframework_lint.autofix import TIMEOUT_S
+    hook = json.loads((Path(__file__).parents[1] / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+    budget = hook["hooks"]["PostToolUse"][0]["hooks"][0]["timeout"]
+    assert 2 * TIMEOUT_S < budget

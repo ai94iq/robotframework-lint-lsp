@@ -219,3 +219,24 @@ def test_inline_if_info_promoted_with_command():
 def test_info_rule_without_command_not_promoted():
     text = "*** Settings ***\nLibrary    String\nLibrary    Collections\n"
     assert "IMP02" not in {d.code for d in lint_text(text, Settings())}
+
+
+def test_close_cancels_pending_publish(monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+
+    from robotframework_lint import lsp
+
+    monkeypatch.setattr(lsp, "DEBOUNCE_SECONDS", 0.05)
+    calls: list[str] = []
+    ls = SimpleNamespace(pending={}, publish=calls.append,
+                         text_document_publish_diagnostics=lambda p: None)
+    params = SimpleNamespace(text_document=SimpleNamespace(uri="file:///x.robot"))
+
+    async def scenario() -> None:
+        await lsp.on_change(ls, params)
+        lsp.on_close(ls, params)
+        await asyncio.sleep(0.2)
+
+    asyncio.run(scenario())
+    assert calls == []

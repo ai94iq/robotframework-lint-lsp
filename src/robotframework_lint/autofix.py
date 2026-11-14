@@ -16,7 +16,8 @@ from pathlib import Path
 from .hints import FIX_COMMANDS
 
 ROBOT_SUFFIXES = {".robot", ".resource"}
-TIMEOUT_S = 60
+# Two robocop runs must finish inside the hook's 120 s budget.
+TIMEOUT_S = 50
 
 
 def fix_file(path: Path) -> None:
@@ -24,18 +25,20 @@ def fix_file(path: Path) -> None:
     robocop = [sys.executable, "-I", "-m", "robocop"]
     check_rules = [rule for rule, cmd in FIX_COMMANDS.items() if cmd.startswith("robocop check")]
     selects = [arg for rule in check_rules for arg in ("--select", rule)]
-    original = path.read_text(encoding="utf-8")
+    original = path.read_text(encoding="utf-8", newline="")
     # A temp copy keeps robocop from reading the repo's config, which can name Python rule files.
     with tempfile.TemporaryDirectory() as tmp:
         copy = Path(tmp) / f"buffer{path.suffix}"
-        copy.write_text(original, encoding="utf-8")
+        copy.write_text(original, encoding="utf-8", newline="")
         # Argument lists, never a shell: the path comes from the hook payload.
         for args in (["format", "--select", "ReplaceWithVAR", "--silent"], ["check", "--fix", *selects]):
             subprocess.run([*robocop, *args, "--", str(copy)], cwd=tmp,
                            capture_output=True, timeout=TIMEOUT_S, check=False)
-        fixed = copy.read_text(encoding="utf-8")
+        fixed = copy.read_text(encoding="utf-8")  # robocop writes the OS line ending
+    if "\r\n" in original:
+        fixed = fixed.replace("\n", "\r\n")
     if fixed != original:
-        path.write_text(fixed, encoding="utf-8")
+        path.write_text(fixed, encoding="utf-8", newline="")
 
 
 def main() -> int:
