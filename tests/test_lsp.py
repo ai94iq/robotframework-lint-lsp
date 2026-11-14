@@ -81,3 +81,36 @@ def test_settings_from_options_defaults_and_overrides():
     s = Settings.from_options({"maxDiagnostics": 5, "minSeverity": "ERROR", "ignore": ["DOC01"]})
     assert (s.max_diagnostics, s.min_severity, s.ignore) == (5, "error", ["DOC01"])
     assert Settings.from_options({"maxDiagnostics": -1, "minSeverity": "bogus"}) == Settings()
+
+
+def test_two_quick_changes_publish_once(monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+
+    from robotframework_lint import lsp
+
+    monkeypatch.setattr(lsp, "DEBOUNCE_SECONDS", 0.05)
+    calls: list[str] = []
+    ls = SimpleNamespace(pending={}, publish=calls.append)
+    params = SimpleNamespace(text_document=SimpleNamespace(uri="file:///x.robot"))
+
+    async def scenario() -> None:
+        await lsp.on_change(ls, params)
+        await lsp.on_change(ls, params)
+        await asyncio.sleep(0.2)
+
+    asyncio.run(scenario())
+    assert calls == ["file:///x.robot"]
+
+
+def test_rules_load_once_with_pyproject_and_entry_point(monkeypatch):
+    from importlib.metadata import entry_points
+
+    from robotframework_lint.lsp import _run_robocop
+
+    assert any(ep.name == "robotframework_lint" for ep in entry_points(group="robocop.plugins"))
+    monkeypatch.chdir(Path(__file__).parent.parent)  # pyproject custom_rules applies here
+    text = (SAMPLES / "arg_names_deprecated.robot").read_text(encoding="utf-8")
+    raw = _run_robocop(text, ".robot", Settings(min_severity="info", select=["RFL006"]))
+    on_line = [d for d in raw if d.range.start.line - 1 == 6]
+    assert len(on_line) == 1, [(d.rule.rule_id, d.message) for d in on_line]

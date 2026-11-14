@@ -1,0 +1,7 @@
+{
+  "name": "robotframework-lint",
+  "version": "0.1.0",
+  "description": "Robot Framework lint diagnostics over LSP (robocop defaults plus RFL rules)",
+  "author": { "name": "ai94iq" },
+  "license": "MIT"
+}
