@@ -25,3 +25,6 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.robocop.lint]
+custom_rules = ["src/robotframework_lint/rules"]
