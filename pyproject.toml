@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robotframework-lint"
+version = "0.1.0"
+description = "Robocop rule pack that follows the latest Robot Framework guidance"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "robotframework==7.5.1",
+    "robotframework-robocop==9.4.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.2.0"]
+
+[project.entry-points."robocop.plugins"]
+robotframework_lint = "robotframework_lint.rules"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
