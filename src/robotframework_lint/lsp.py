@@ -143,6 +143,8 @@ class RflintServer(LanguageServer):
         try:
             self.index.update(uri, doc.source)
             diagnostics = lint_text(doc.source, self.settings, suffix)
+            for diag in diagnostics:  # robocop columns are code points
+                diag.range = self.workspace.position_codec.range_to_client_units(doc.lines, diag.range)
         except Exception as exc:  # parse errors must not kill the server
             self.window_log_message(types.LogMessageParams(types.MessageType.Warning, f"rflint: {exc}"[:200]))
             diagnostics = []

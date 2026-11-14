@@ -114,6 +114,7 @@ class _FileIndex:
     calls: list[Location] = field(default_factory=list)
     names: list[str] = field(default_factory=list)
     definitions: dict[str, _Definition] = field(default_factory=dict)
+    lines: list[str] = field(default_factory=list)
 
 
 class WorkspaceIndex:
@@ -129,7 +130,13 @@ class WorkspaceIndex:
             [Location(uri, t.lineno - 1, t.col_offset, t.end_col_offset) for t in tokens],
             [_key(t.value) for t in tokens],
             _definitions(uri, model),
+            text.splitlines(keepends=True),
         )
+
+    def lines(self, uri: str) -> list[str]:
+        """Source lines, so the LSP layer can convert columns to the client's encoding."""
+        index = self.files.get(uri)
+        return index.lines if index else []
 
     def _name_at(self, uri: str, line: int, character: int) -> str | None:
         index = self.files.get(uri)

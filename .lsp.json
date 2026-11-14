@@ -2,6 +2,9 @@
   "robotframework": {
     "command": "robotframework-lint-lsp",
     "args": [],
+    "startupTimeout": 30000,
+    "restartOnCrash": true,
+    "maxRestarts": 3,
     "extensionToLanguage": {
       ".robot": "robotframework",
       ".resource": "robotframework"

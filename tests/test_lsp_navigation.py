@@ -27,13 +27,14 @@ def _read_result(stream, request_id: int):
             return message["result"]
 
 
-def _ask(requests: list[tuple[str, dict]]) -> list:
-    """Start the server on the nav folder, send requests in order, return results."""
+def _ask(requests: list[tuple[str, dict]], root: Path = NAV, encodings: list[str] | None = None) -> list:
+    """Start the server on a folder, send requests in order, return results."""
+    general = {"positionEncodings": encodings} if encodings else {}
     proc = subprocess.Popen([sys.executable, "-m", "robotframework_lint.lsp"],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     try:
         proc.stdin.write(_frame({"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {
-            "processId": None, "rootUri": NAV.as_uri(), "capabilities": {}}}))
+            "processId": None, "rootUri": root.as_uri(), "capabilities": {"general": general}}}))
         proc.stdin.write(_frame({"jsonrpc": "2.0", "method": "initialized", "params": {}}))
         for request_id, (method, params) in enumerate(requests, start=1):
             proc.stdin.write(_frame({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}))
@@ -59,3 +60,24 @@ def test_navigation_over_stdio():
 def test_workspace_symbol_over_stdio():
     (found,) = _ask([("workspace/symbol", {"query": "open shop"})])
     assert [(s["name"], s["location"]["uri"]) for s in found] == [("Open Shop", RESOURCE)]
+
+
+UTF = (Path(__file__).parent / "samples" / "nav_utf").resolve()
+UTF_URI = (UTF / "k.resource").as_uri()
+
+
+def _call_site(encoding: str, column: int) -> tuple[int, int]:
+    on_call = {"textDocument": {"uri": UTF_URI}, "position": {"line": 5, "character": column + 1}}
+    definition, refs = _ask([("textDocument/definition", on_call),
+                             ("textDocument/references", {**on_call, "context": {"includeDeclaration": False}})],
+                            root=UTF, encodings=[encoding])
+    return definition["range"]["start"]["line"], refs[0]["range"]["start"]["character"]
+
+
+def test_utf8_columns_count_bytes():
+    # "Say Hello" starts after ${ä😀}= : 14 code points, 18 utf-8 bytes
+    assert _call_site("utf-8", 18) == (1, 18)
+
+
+def test_utf16_columns_count_code_units():
+    assert _call_site("utf-16", 15) == (1, 15)

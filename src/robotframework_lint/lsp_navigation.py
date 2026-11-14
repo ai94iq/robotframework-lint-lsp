@@ -41,8 +41,17 @@ def _range(line: int, start: int, end: int) -> types.Range:
     return types.Range(types.Position(line, start), types.Position(line, end))
 
 
-def _location(loc: Location) -> types.Location:
-    return types.Location(uri=loc.uri, range=_range(loc.line, loc.start, loc.end))
+def _location(ls, loc: Location) -> types.Location:
+    """Index columns are code points; the client counts in the negotiated encoding."""
+    codec = ls.workspace.position_codec
+    client_range = codec.range_to_client_units(ls.index.lines(loc.uri), _range(loc.line, loc.start, loc.end))
+    return types.Location(uri=loc.uri, range=client_range)
+
+
+def _at(ls, params) -> tuple[str, int, int]:
+    uri = params.text_document.uri
+    position = ls.workspace.position_codec.position_from_client_units(ls.index.lines(uri), params.position)
+    return uri, position.line, position.character
 
 
 def register(server) -> None:
@@ -57,22 +66,22 @@ def register(server) -> None:
 
     @server.feature(types.TEXT_DOCUMENT_DEFINITION)
     def on_definition(ls, params: types.DefinitionParams):
-        found = ls.index.definition(params.text_document.uri, params.position.line, params.position.character)
-        return _location(found) if found else None
+        found = ls.index.definition(*_at(ls, params))
+        return _location(ls, found) if found else None
 
     @server.feature(types.TEXT_DOCUMENT_REFERENCES)
     def on_references(ls, params: types.ReferenceParams):
-        found = ls.index.references(params.text_document.uri, params.position.line, params.position.character)
-        return [_location(loc) for loc in found]
+        found = ls.index.references(*_at(ls, params))
+        return [_location(ls, loc) for loc in found]
 
     @server.feature(types.WORKSPACE_SYMBOL)
     def on_workspace_symbol(ls, params: types.WorkspaceSymbolParams):
-        return [types.WorkspaceSymbol(name=f.name, kind=types.SymbolKind.Function, location=_location(f.location))
+        return [types.WorkspaceSymbol(name=f.name, kind=types.SymbolKind.Function, location=_location(ls, f.location))
                 for f in ls.index.find(params.query)]
 
     @server.feature(types.TEXT_DOCUMENT_HOVER)
     def on_hover(ls, params: types.HoverParams):
-        text = ls.index.hover(params.text_document.uri, params.position.line, params.position.character)
+        text = ls.index.hover(*_at(ls, params))
         if text is None:
             return None
         return types.Hover(contents=types.MarkupContent(kind=types.MarkupKind.PlainText, value=text))
