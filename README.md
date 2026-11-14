@@ -60,6 +60,18 @@ Settings go in `initializationOptions`: `maxDiagnostics`, `minSeverity`,
 `select`, `ignore`. For Claude Code, copy `.lsp.json` from this repo into
 your plugin; it maps `.robot` and `.resource` to `robotframework`.
 
+The server also answers code navigation for user keywords:
+
+- document symbols: tests, keywords and variables in a file
+- definition and references: matched the way Robot matches names, so
+  `say_hello` finds `Say Hello`
+- hover: the keyword signature and the first doc line, at most 200 characters
+
+On start it indexes every `.robot` and `.resource` file under the workspace
+root, up to 2000 files. It skips `.git`, `.venv`, `node_modules` and
+`results`. Open files are indexed again on every change. Library keywords
+such as `Log` and keywords with embedded arguments aren't indexed.
+
 ## Tests
 
 ```bash

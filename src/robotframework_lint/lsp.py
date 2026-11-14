@@ -15,6 +15,10 @@ from pathlib import Path
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
 
+from .lsp_navigation import register as register_navigation
+from .lsp_navigation import scan_workspace
+from .navigation import WorkspaceIndex
+
 RULES_DIR = Path(__file__).parent / "rules"
 MAX_MESSAGE = 120
 DEBOUNCE_SECONDS = 0.4
@@ -120,11 +124,13 @@ class RflintServer(LanguageServer):
         super().__init__("robotframework-lint-lsp", "0.1.0")
         self.settings = Settings()
         self.pending: dict[str, asyncio.Task] = {}
+        self.index = WorkspaceIndex()
 
     def publish(self, uri: str) -> None:
         doc = self.workspace.get_text_document(uri)
         suffix = ".resource" if uri.endswith(".resource") else ".robot"
         try:
+            self.index.update(uri, doc.source)
             diagnostics = lint_text(doc.source, self.settings, suffix)
         except Exception as exc:  # parse errors must not kill the server
             self.window_log_message(types.LogMessageParams(types.MessageType.Warning, f"rflint: {exc}"[:200]))
@@ -135,11 +141,13 @@ class RflintServer(LanguageServer):
 
 
 server = RflintServer()
+register_navigation(server)
 
 
 @server.feature(types.INITIALIZE)
 def on_initialize(ls: RflintServer, params: types.InitializeParams) -> None:
     ls.settings = Settings.from_options(params.initialization_options)
+    scan_workspace(ls.index, params.root_uri)
 
 
 @server.feature(types.TEXT_DOCUMENT_DID_OPEN)
