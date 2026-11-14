@@ -67,6 +67,8 @@ The server also answers code navigation for user keywords:
 - document symbols: tests, keywords and variables in a file
 - definition and references: matched the way Robot matches names, so
   `say_hello` finds `Say Hello`
+- workspace symbols: find a keyword by name, exact matches first, then
+  prefix, then substring
 - hover: the keyword signature and the first doc line, at most 200 characters
 
 On start it indexes every `.robot` and `.resource` file under the workspace

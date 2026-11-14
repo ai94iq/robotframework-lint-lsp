@@ -37,8 +37,15 @@ class Location:
     end: int
 
 
+@dataclass(frozen=True)
+class Found:
+    name: str
+    location: Location
+
+
 @dataclass
 class _Definition:
+    name: str
     location: Location
     signature: str
     doc: str
@@ -88,7 +95,7 @@ def _definitions(uri: str, model) -> dict[str, _Definition]:
         if isinstance(node, Keyword):
             name = node.header.get_token(Token.KEYWORD_NAME)
             loc = Location(uri, name.lineno - 1, name.col_offset, name.end_col_offset)
-            found[_key(node.name)] = _Definition(loc, _signature(node), _first_doc_line(node))
+            found[_key(node.name)] = _Definition(node.name, loc, _signature(node), _first_doc_line(node))
     return found
 
 
@@ -154,6 +161,17 @@ class WorkspaceIndex:
             return []
         found = [loc for f in self.files.values() for loc, n in zip(f.calls, f.names) if n == name]
         return found[:MAX_RESULTS]
+
+    def find(self, query: str) -> list[Found]:
+        """Keywords whose name matches the query: exact, then prefix, then substring."""
+        wanted = _key(query)
+        ranked = []
+        for f in self.files.values():
+            for key, d in f.definitions.items():
+                if wanted in key:
+                    rank = 0 if key == wanted else 1 if key.startswith(wanted) else 2
+                    ranked.append((rank, d.name, Found(d.name, d.location)))
+        return [found for _, _, found in sorted(ranked, key=lambda r: r[:2])][:MAX_RESULTS]
 
     def hover(self, uri: str, line: int, character: int) -> str | None:
         found = self._resolve(uri, line, character)

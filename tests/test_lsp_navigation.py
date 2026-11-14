@@ -54,3 +54,8 @@ def test_navigation_over_stdio():
     assert (definition["uri"], definition["range"]["start"]["line"]) == (RESOURCE, 5)
     assert sorted((r["uri"], r["range"]["start"]["line"]) for r in references) == sorted([(RESOURCE, 12), (SUITE, 7)])
     assert hover["contents"]["value"] == "Say Hello(${name})\nLogs a greeting to the given name."
+
+
+def test_workspace_symbol_over_stdio():
+    (found,) = _ask([("workspace/symbol", {"query": "open shop"})])
+    assert [(s["name"], s["location"]["uri"]) for s in found] == [("Open Shop", RESOURCE)]

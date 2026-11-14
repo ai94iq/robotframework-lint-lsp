@@ -65,6 +65,11 @@ def register(server) -> None:
         found = ls.index.references(params.text_document.uri, params.position.line, params.position.character)
         return [_location(loc) for loc in found]
 
+    @server.feature(types.WORKSPACE_SYMBOL)
+    def on_workspace_symbol(ls, params: types.WorkspaceSymbolParams):
+        return [types.WorkspaceSymbol(name=f.name, kind=types.SymbolKind.Function, location=_location(f.location))
+                for f in ls.index.find(params.query)]
+
     @server.feature(types.TEXT_DOCUMENT_HOVER)
     def on_hover(ls, params: types.HoverParams):
         text = ls.index.hover(params.text_document.uri, params.position.line, params.position.character)

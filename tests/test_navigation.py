@@ -58,6 +58,23 @@ def test_symbols_capped_at_fifty():
     assert len(document_symbols("*** Test Cases ***\n" + tests, ".robot")) == 50
 
 
+def test_find_by_name_ranks_exact_first():
+    names = [(s.name, s.location.line) for s in _index().find("say hello")]
+    assert names == [("Say Hello", 5)]
+
+
+def test_find_by_partial_name():
+    names = sorted(s.name for s in _index().find("o"))
+    assert names == ["Open Shop", "Say Hello"]
+
+
+def test_find_exact_before_prefix_before_substring():
+    index = WorkspaceIndex()
+    index.update("file:///k.resource", "*** Keywords ***\nLog In User\n    No Operation\n"
+                 "Login\n    No Operation\nAuto Login\n    No Operation\n")
+    assert [s.name for s in index.find("login")] == ["Login", "Log In User", "Auto Login"]
+
+
 def test_hover_shows_args_and_first_doc_line():
     text = _index().hover(SUITE, line=7, character=6)
     assert text == "Say Hello(${name})\nLogs a greeting to the given name."
