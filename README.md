@@ -32,6 +32,8 @@ the rules load by plugin name, no path needed. Run only these rules with
 | RFL002 | deprecated-standard-library (Telnet) | [RF 7.5 release notes](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
 | RFL003 | deprecated-tag-pattern (`XORY`, `&`) | [RF 7.5 release notes](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
 | RFL004 | deprecated-translation (French `Unités de test`, Finnish `Tagit`) | [RF 7.5 release notes](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
+| RFL005 | doc-tags-without-empty-row (`Tags:` in keyword docs) | [RF 7.5 release notes](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
+| RFL006 | deprecated-argument-name (`list_=`, `time_=`) | [RF 7.5 release notes](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
 
 RFL003 asks Robot Framework's own `TagPatterns` whether a pattern is deprecated,
 so it reports exactly what RF 7.5.1 warns about. That includes all-caps tags
