@@ -10,19 +10,16 @@
 <meta property="og:type" content="website">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23ffe24a'/%3E%3Cg fill='none' stroke='%2316181d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7h7'/%3E%3Cpath d='M7 12h10'/%3E%3Cpath d='M7 17h5'/%3E%3Cpath d='M15 16l2 2 3-4'/%3E%3C/g%3E%3C/svg%3E">
-<link rel="preload" href="fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="fonts/fragment-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=Inter:wght@400;600;700;800&display=swap">
 <script>document.documentElement.classList.add('js')</script>
 <style>
-@font-face { font-family: "Bricolage Grotesque"; src: url(fonts/bricolage-grotesque.woff2) format("woff2"); font-weight: 200 800; font-display: swap; }
-@font-face { font-family: "Fragment Mono"; src: url(fonts/fragment-mono.woff2) format("woff2"); font-weight: 400; font-display: swap; }
 
 :root {
   color-scheme: light dark;
   --page: #ffffff; --ink: #16181d; --mute: #62676f; --line: #e4e5e8; --quiet: #d4d6da; --panel: #d8dae0;
   --mark: #ffe24a; --on-mark: #16181d;
-  --sans: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "Fragment Mono", ui-monospace, Menlo, Consolas, monospace;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
   --swipe: cubic-bezier(.3, .7, .2, 1);
 }
 @media (prefers-color-scheme: dark) {
