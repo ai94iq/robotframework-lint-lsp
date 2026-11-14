@@ -30,9 +30,12 @@ def fix_file(path: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         copy = Path(tmp) / f"buffer{path.suffix}"
         copy.write_text(original, encoding="utf-8", newline="")
+        # TMPDIR can sit under a folder with its own robocop config; an explicit empty one wins.
+        config = Path(tmp) / "robocop.toml"
+        config.write_text("", encoding="utf-8")
         # Argument lists, never a shell: the path comes from the hook payload.
         for args in (["format", "--select", "ReplaceWithVAR", "--silent"], ["check", "--fix", *selects]):
-            subprocess.run([*robocop, *args, "--", str(copy)], cwd=tmp,
+            subprocess.run([*robocop, *args, "--config", str(config), "--root", tmp, "--", str(copy)], cwd=tmp,
                            capture_output=True, timeout=TIMEOUT_S, check=False)
         fixed = copy.read_text(encoding="utf-8")  # robocop writes the OS line ending
     if "\r\n" in original:

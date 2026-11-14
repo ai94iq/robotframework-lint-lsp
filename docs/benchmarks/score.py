@@ -1,6 +1,7 @@
 """Score every run: cost, tries, time from the transcript; quality from dryrun and robocop."""
 import glob
 import json
+import os
 import re
 import statistics
 import subprocess
@@ -10,6 +11,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2] / ".venv"
 VENV = ROOT / "Scripts" if (ROOT / "Scripts").is_dir() else ROOT / "bin"
+# Agent-written suites run here: no inherited secrets or tokens, and a hung suite cannot stall scoring.
+SUITE_ENV = {k: v for k in ("SYSTEMROOT", "PATH", "TEMP", "TMP") if (v := os.environ.get(k))}
+SUITE_TIMEOUT_S = 300
 
 
 def transcript(path: Path) -> dict:
@@ -39,8 +43,12 @@ def robot(folder: Path, *flags: str) -> tuple[int, int]:
     present = [s for s in SUITES if (folder / s).exists()]
     if not present:
         return 0, 1
-    subprocess.run([str(VENV / "robot"), *flags, "--output", "out.xml", "--report", "NONE", "--log", "NONE",
-                           "--console", "none", *present], cwd=folder, capture_output=True, text=True)
+    try:
+        subprocess.run([str(VENV / "robot"), *flags, "--output", "out.xml", "--report", "NONE", "--log", "NONE",
+                               "--console", "none", *present], cwd=folder, capture_output=True, text=True,
+                       env=SUITE_ENV, timeout=SUITE_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        return 0, 1
     stats = re.search(r'<stat pass="(\d+)" fail="(\d+)" skip="\d+">All Tests</stat>',
                       (folder / "out.xml").read_text(encoding="utf-8")) if (folder / "out.xml").exists() else None
     (folder / "out.xml").unlink(missing_ok=True)

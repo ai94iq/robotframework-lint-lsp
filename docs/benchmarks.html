@@ -1582,6 +1582,7 @@ a{color:inherit}
     frame.setAttribute('sandbox','allow-scripts allow-downloads allow-modals');
     const script = `<script>(()=>{
       const token=${JSON.stringify(token)};
+      const host=${JSON.stringify(/^https?:$/.test(location.protocol)?location.origin:'*')};
       let pending=null;
       const settle=data=>requestAnimationFrame(()=>{
         if(pending!==data)return;
@@ -1595,7 +1596,7 @@ a{color:inherit}
           const active=document.querySelector('svg[data-focus-active]');
           const selected=Array.from(document.querySelectorAll('[data-focus-selected]')).map(node=>node.dataset.nodeId);
           const matched=Array.from(document.querySelectorAll('[data-edge-id][data-focus-match]')).map(edge=>edge.dataset.edgeId);
-          parent.postMessage({kind:'archify-explainer-focus-result',token,nodes:[...new Set(selected)],edges:[...new Set(matched)],active:active?.dataset.focusActive||''},'*');
+          parent.postMessage({kind:'archify-explainer-focus-result',token,nodes:[...new Set(selected)],edges:[...new Set(matched)],active:active?.dataset.focusActive||''},host);
         }));
       });
       // The native hash listeners restore focus before the explicit host selection.
@@ -1610,8 +1611,8 @@ a{color:inherit}
         if(location.hash.slice(1)===data.hash)dispatchEvent(new HashChangeEvent('hashchange'));
         else location.hash=data.hash;
       });
-      addEventListener('keydown',event=>{if(event.key==='Escape')parent.postMessage({kind:'archify-explainer-escape',token},'*');},true);
-      const ready=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>parent.postMessage({kind:'archify-explainer-ready',token},'*')));
+      addEventListener('keydown',event=>{if(event.key==='Escape')parent.postMessage({kind:'archify-explainer-escape',token},host);},true);
+      const ready=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>parent.postMessage({kind:'archify-explainer-ready',token},host)));
       if(document.readyState==='complete')ready();else addEventListener('load',ready,{once:true});
     })();<\/script>`;
     viewer = {id,frame,token,hash,nodes:requestedNodes,edges:requestedEdges,ready:false};

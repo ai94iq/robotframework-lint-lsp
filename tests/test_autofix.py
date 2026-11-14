@@ -89,3 +89,15 @@ def test_fix_skips_file_changed_meanwhile(tmp_path, monkeypatch):
     monkeypatch.setattr(autofix.subprocess, "run", edit_during_run)
     fix_file(path)
     assert path.read_text(encoding="utf-8") == "NEWER"
+
+
+def test_temp_parent_config_cannot_steer_fix(tmp_path, monkeypatch):
+    import tempfile
+
+    (tmp_path / "pyproject.toml").write_text('[tool.robocop.lint]\nignore = ["*"]\n')
+    (tmp_path / "t").mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path / "t"))
+    path = tmp_path / "s.robot"
+    path.write_text(LEGACY, encoding="utf-8")
+    fix_file(path)
+    assert "IF    $x    Log" in path.read_text(encoding="utf-8")
