@@ -1,4 +1,4 @@
-# robotframework-lint
+# robotframework-lint-lsp
 
 Extra [Robocop](https://github.com/MarketSquare/robotframework-robocop) rules
 for Robot Framework 7.5. When Robocop and the Robot Framework docs disagree,

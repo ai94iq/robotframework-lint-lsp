@@ -9,8 +9,8 @@ Yes: with the LSP and its auto-fix hook, agents leave **70 to 100 percent fewer 
 
 @answer scope="Measured 2026-11-14 on one task: write two Robot Framework suites with keywords and run them. Haiku 25 runs per arm at default effort; per-model check 3 runs per arm at medium effort. Plugin version c84eb65. Lint issues = robocop 9.4.0 default findings left in the final files."
 @meta locale=en
-@source harness title="A/B harness: one_run.sh, score.py, task.txt and raw results" url=https://github.com/ai94iq/robotframework-lint/tree/main/docs/benchmarks
-@source research title="Agent setup guide" url=https://github.com/ai94iq/robotframework-lint/blob/main/docs/agents.md
+@source harness title="A/B harness: one_run.sh, score.py, task.txt and raw results" url=https://github.com/ai94iq/robotframework-lint-lsp/tree/main/docs/benchmarks
+@source research title="Agent setup guide" url=https://github.com/ai94iq/robotframework-lint-lsp/blob/main/docs/agents.md
 
 ## How does a finding reach the agent and get fixed? {#feedback-loop}
 

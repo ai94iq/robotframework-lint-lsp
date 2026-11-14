@@ -22,8 +22,8 @@ Code").
 
 ```bash
 python -m venv .venv
-.venv/Scripts/python -m pip install git+https://github.com/ai94iq/robotframework-lint@v0.1.0   # Windows
-.venv/bin/python -m pip install git+https://github.com/ai94iq/robotframework-lint@v0.1.0       # Linux, macOS
+.venv/Scripts/python -m pip install robotframework-lint-lsp   # Windows
+.venv/bin/python -m pip install robotframework-lint-lsp       # Linux, macOS
 ```
 
 This installs two commands. Put the venv's `Scripts` or `bin` folder on
@@ -48,7 +48,7 @@ claude --plugin-dir /path/to/robotframework-lint
 Keep it: add the repo to a plugin marketplace you control, then
 
 ```bash
-claude plugin install robotframework-lint@<marketplace> --scope user
+claude plugin install robotframework-lint-lsp@<marketplace> --scope user
 ```
 
 `.lsp.json` maps `.robot` and `.resource` to the server and passes the
