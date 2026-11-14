@@ -1,0 +1,12 @@
+{
+  "name": "robotframework-lint-lsp",
+  "owner": { "name": "ai94iq" },
+  "description": "Robot Framework lint for coding agents",
+  "plugins": [
+    {
+      "name": "robotframework-lint-lsp",
+      "source": "./",
+      "description": "Robot Framework lint for coding agents: diagnostics over LSP and safe robocop fixes after each edit"
+    }
+  ]
+}
