@@ -15,6 +15,7 @@ from robot.parsing.model.statements import Arguments, Documentation, Variable
 from robot.utils import normalize
 
 MAX_HOVER = 200
+MAX_RESULTS = 50
 # Fixture settings name a keyword in a NAME token instead of a KEYWORD token.
 FIXTURES = {Token.SETUP, Token.TEARDOWN, Token.SUITE_SETUP, Token.SUITE_TEARDOWN,
             Token.TEST_SETUP, Token.TEST_TEARDOWN}
@@ -67,7 +68,7 @@ def document_symbols(text: str, suffix: str) -> list[Symbol]:
             symbols.append(Symbol(node.name, kind, node.lineno - 1, node.end_lineno - 1))
         elif isinstance(node, Variable) and node.name:
             symbols.append(Symbol(node.name, "variable", node.lineno - 1, node.lineno - 1))
-    return symbols
+    return symbols[:MAX_RESULTS]
 
 
 def _calls(model) -> list[Token]:
@@ -151,7 +152,8 @@ class WorkspaceIndex:
         name = self._name_at(uri, line, character)
         if name is None:
             return []
-        return [loc for f in self.files.values() for loc, n in zip(f.calls, f.names) if n == name]
+        found = [loc for f in self.files.values() for loc, n in zip(f.calls, f.names) if n == name]
+        return found[:MAX_RESULTS]
 
     def hover(self, uri: str, line: int, character: int) -> str | None:
         found = self._resolve(uri, line, character)

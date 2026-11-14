@@ -46,7 +46,7 @@ def test_stdio_roundtrip_publishes_capped_diagnostics():
     finally:
         proc.kill()
     diagnostics = published["params"]["diagnostics"]
-    assert len(diagnostics) == 2, diagnostics
+    assert len(diagnostics) == 3, diagnostics  # two findings plus the overflow marker
     for diag in diagnostics:
         assert set(diag) <= {"range", "message", "severity", "code", "source"}
         assert diag["message"].startswith(diag["code"] + " ")
@@ -59,8 +59,17 @@ def test_our_rule_reported_with_line():
     assert all(d.code == "RFL006" and len(d.message) <= 120 for d in found)
 
 
-def test_cap_default_twenty():
-    assert len(lint_text(NOISY, Settings(min_severity="info"))) == 20
+def test_cap_default_twenty_plus_overflow_marker():
+    found = lint_text(NOISY, Settings(min_severity="info"))
+    total = len(lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info")))
+    assert len(found) == 21
+    assert found[-1].code == "overflow"
+    assert found[-1].message == f"overflow {total - 20} more findings not shown (maxDiagnostics 20)"
+
+
+def test_no_marker_under_cap():
+    found = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info"))
+    assert all(d.code != "overflow" for d in found)
 
 
 def test_severity_floor_filters():

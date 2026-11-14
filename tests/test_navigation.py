@@ -46,6 +46,18 @@ def test_references_cover_every_call_site():
     assert refs == sorted([(RESOURCE, 12), (SUITE, 7)])
 
 
+def test_references_capped_at_fifty():
+    calls = "".join(f"T{i}\n    Say Hello    x\n" for i in range(60))
+    index = _index()
+    index.update("file:///many.robot", "*** Test Cases ***\n" + calls)
+    assert len(index.references(RESOURCE, line=5, character=2)) == 50
+
+
+def test_symbols_capped_at_fifty():
+    tests = "".join(f"T{i}\n    No Operation\n" for i in range(60))
+    assert len(document_symbols("*** Test Cases ***\n" + tests, ".robot")) == 50
+
+
 def test_hover_shows_args_and_first_doc_line():
     text = _index().hover(SUITE, line=7, character=6)
     assert text == "Say Hello(${name})\nLogs a greeting to the given name."

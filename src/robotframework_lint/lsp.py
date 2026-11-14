@@ -98,9 +98,20 @@ def lint_text(text: str, settings: Settings, suffix: str = ".robot") -> list[typ
             continue
         seen.add(key)
         result.append(_to_lsp(diag, rule_id, line, severity))
-        if len(result) >= settings.max_diagnostics:
-            break
-    return result
+    if len(result) <= settings.max_diagnostics:
+        return result
+    return result[: settings.max_diagnostics] + [_overflow(len(result) - settings.max_diagnostics, settings)]
+
+
+def _overflow(hidden: int, settings: Settings) -> types.Diagnostic:
+    # Without it an agent can't tell a clean tail from a truncated one.
+    return types.Diagnostic(
+        range=types.Range(types.Position(0, 0), types.Position(0, 0)),
+        message=f"overflow {hidden} more findings not shown (maxDiagnostics {settings.max_diagnostics})",
+        severity=types.DiagnosticSeverity.Information,
+        code="overflow",
+        source="rflint",
+    )
 
 
 def _to_lsp(diag, rule_id: str, line: int, severity: str) -> types.Diagnostic:

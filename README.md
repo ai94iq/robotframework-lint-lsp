@@ -52,7 +52,9 @@ buffer in process with the robocop defaults plus these rules, on open, save
 and change (debounced 0.4 s). Output is kept small for AI agents:
 
 - one line per finding: `RULEID message`, at most 120 characters
-- at most 20 findings per file (`maxDiagnostics`)
+- at most 20 findings per file (`maxDiagnostics`), then one `overflow` line
+  that says how many more were cut
+- at most 50 symbols or references per answer
 - warnings and errors only by default (`minSeverity`: info, warning, error)
 - identical findings on one line reported once; no related information
 
