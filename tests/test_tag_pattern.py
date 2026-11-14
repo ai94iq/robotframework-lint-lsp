@@ -36,3 +36,10 @@ def test_pyproject_loads_plugin_without_flag():
     output = run_robocop("tag_pattern_deprecated.robot", custom=False)
     assert "tag_pattern_deprecated.robot:2:" in output
     assert "did not match" not in output
+
+
+def test_all_caps_operator_words_follow_rf():
+    # RF 7.5.1 TagPatterns warns on DONOTX and ORANGE; lower case is fine.
+    output = run_robocop("tag_pattern_all_caps.robot")
+    assert output.count("tag_pattern_all_caps.robot:3:") == 2
+    assert "'NOT'" in output and "'OR'" in output

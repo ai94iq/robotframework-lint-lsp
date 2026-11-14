@@ -1,13 +1,15 @@
 """Rules for tag patterns."""
 
 import re
+import warnings
 
 from robot.api import Token
+from robot.model.tags import TagPatterns
 
 from robocop.linter.rules import Rule, RuleSeverity, VisitorChecker
 
-# Operator glued to non-lowercase text on both sides, as in XORY.
-GLUED_OPERATOR = re.compile(r"(?<=[^\sa-z])(AND|OR|NOT)(?=[^\sa-z])")
+# Operator named in the Robot Framework 7.5 TagPatterns deprecation warning.
+WARNED_OPERATOR = re.compile(r"'(AND|OR|NOT)' is currently considered")
 # Keywords whose arguments are tag patterns.
 PATTERN_KEYWORDS = {"removetags"}
 
@@ -15,8 +17,14 @@ PATTERN_KEYWORDS = {"removetags"}
 def deprecated_form(pattern: str) -> str | None:
     if "&" in pattern:
         return "&"
-    match = GLUED_OPERATOR.search(pattern)
-    return match.group(1) if match else None
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        TagPatterns([pattern])
+    for warning in caught:
+        match = WARNED_OPERATOR.search(str(warning.message))
+        if match:
+            return match.group(1)
+    return None
 
 
 class DeprecatedTagPatternRule(Rule):

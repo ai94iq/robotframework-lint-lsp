@@ -30,6 +30,18 @@ the rules load by plugin name, no path needed. Run only these rules with
 |---|---|---|
 | RFL001 | for-in-zip-without-mode | [RF 7.0 release notes](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.0.rst) |
 | RFL002 | deprecated-standard-library (Telnet) | [RF 7.5 release notes](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
+| RFL003 | deprecated-tag-pattern (`XORY`, `&`) | [RF 7.5 release notes](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
+| RFL004 | deprecated-translation (French `Unités de test`, Finnish `Tagit`) | [RF 7.5 release notes](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
+
+RFL003 asks Robot Framework's own `TagPatterns` whether a pattern is deprecated,
+so it reports exactly what RF 7.5.1 warns about. That includes all-caps tags
+holding an operator word, such as `-DONOTX` or `-ORANGE`: RF reads them as
+`DO NOT X` and `OR ANGE`. Write such tags in lower case.
+
+RFL004 reads the deprecated terms from Robot Framework's own language
+definitions. It reports a term only when RF parsed it as a header or setting,
+that is, when the file's language is French or Finnish (`language: fr` or
+`language: fi` in the file, or `--language`).
 
 ## Tests
 
