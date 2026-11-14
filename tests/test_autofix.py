@@ -38,12 +38,22 @@ def test_hook_fixes_robot_file_silently(tmp_path):
     assert "Set Test Variable" not in path.read_text(encoding="utf-8")
 
 
+def test_hook_ignores_repo_robocop_module(tmp_path):
+    marker = tmp_path / "MARKER"
+    (tmp_path / "robocop.py").write_text(f"open(r'{marker}', 'w').write('ran')\n", encoding="utf-8")
+    path = tmp_path / "t.robot"
+    path.write_text(LEGACY, encoding="utf-8")
+    _run_hook({"tool_name": "Edit", "tool_input": {"file_path": str(path)}}, cwd=tmp_path)
+    assert not marker.exists()
+    assert "Set Test Variable" not in path.read_text(encoding="utf-8")
+
+
 def test_hook_survives_bad_input():
     result = subprocess.run([sys.executable, "-m", "robotframework_lint.autofix"],
                             input="not json", capture_output=True, text=True, timeout=60)
     assert result.returncode == 0
 
 
-def _run_hook(payload: dict) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, "-m", "robotframework_lint.autofix"],
+def _run_hook(payload: dict, cwd=None) -> subprocess.CompletedProcess:
+    return subprocess.run([sys.executable, "-m", "robotframework_lint.autofix"], cwd=cwd,
                           input=json.dumps(payload), capture_output=True, text=True, timeout=120)

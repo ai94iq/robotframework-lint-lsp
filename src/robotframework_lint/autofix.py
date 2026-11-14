@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from .hints import FIX_COMMANDS
@@ -19,12 +20,22 @@ TIMEOUT_S = 60
 
 
 def fix_file(path: Path) -> None:
-    robocop = [sys.executable, "-m", "robocop"]
+    # -I: the hook runs inside the edited repo, which must not shadow robocop with its own module.
+    robocop = [sys.executable, "-I", "-m", "robocop"]
     check_rules = [rule for rule, cmd in FIX_COMMANDS.items() if cmd.startswith("robocop check")]
     selects = [arg for rule in check_rules for arg in ("--select", rule)]
-    # Argument lists, never a shell: the path comes from the hook payload.
-    for args in (["format", "--select", "ReplaceWithVAR", "--silent"], ["check", "--fix", *selects]):
-        subprocess.run([*robocop, *args, "--", str(path)], capture_output=True, timeout=TIMEOUT_S, check=False)
+    original = path.read_text(encoding="utf-8")
+    # A temp copy keeps robocop from reading the repo's config, which can name Python rule files.
+    with tempfile.TemporaryDirectory() as tmp:
+        copy = Path(tmp) / f"buffer{path.suffix}"
+        copy.write_text(original, encoding="utf-8")
+        # Argument lists, never a shell: the path comes from the hook payload.
+        for args in (["format", "--select", "ReplaceWithVAR", "--silent"], ["check", "--fix", *selects]):
+            subprocess.run([*robocop, *args, "--", str(copy)], cwd=tmp,
+                           capture_output=True, timeout=TIMEOUT_S, check=False)
+        fixed = copy.read_text(encoding="utf-8")
+    if fixed != original:
+        path.write_text(fixed, encoding="utf-8")
 
 
 def main() -> int:
@@ -36,7 +47,7 @@ def main() -> int:
     if path.suffix.lower() in ROBOT_SUFFIXES and path.is_file():
         try:
             fix_file(path)
-        except (OSError, subprocess.TimeoutExpired):
+        except (OSError, ValueError, subprocess.TimeoutExpired):
             pass  # a failed fix must never block the agent's edit
     return 0
 
