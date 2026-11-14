@@ -178,7 +178,7 @@ def test_deprecation_message_has_fix_command():
 def test_same_rule_grouped_into_one_diagnostic():
     text = ("*** Test Cases ***\nT\n    Set Test Variable    ${x}    1\n    Log    x\n"
             "    Set Test Variable    ${y}    2\n    Set Suite Variable    ${z}    3\n")
-    depr = [d for d in lint_text(text, Settings()) if d.code == "DEPR05"]
+    depr = [d for d in lint_text(text, Settings(group=True)) if d.code == "DEPR05"]
     assert len(depr) == 1, depr
     assert depr[0].range.start.line == 2
     assert depr[0].message.startswith("DEPR05 x3 (lines 3,5,6) ")
@@ -191,6 +191,29 @@ def test_fixable_info_rule_promoted_with_command():
     (depr,) = [d for d in lint_text(text, Settings()) if d.code == "DEPR11"]
     assert depr.severity == 2
     assert depr.message.endswith("; fix all: robocop check --fix --select DEPR11 <file>")
+
+
+def test_grouping_off_by_default():
+    # v4 A/B: grouped DEPR05/06 left more findings than one diagnostic per line
+    text = ("*** Test Cases ***\nT\n    Set Test Variable    ${x}    1\n"
+            "    Set Test Variable    ${y}    2\n")
+    assert [d.range.start.line for d in lint_text(text, Settings()) if d.code == "DEPR05"] == [2, 3]
+    assert Settings.from_options({}).group is False
+    assert Settings.from_options({"groupFindings": True}).group is True
+
+
+def test_mixed_assignment_style_names_fix_command():
+    # MISC04 was the largest leftover in A/B runs; agents saw it but did not fix it by hand
+    text = "*** Test Cases ***\nT\n    ${a}=    Set Variable    1\n    ${b}    Set Variable    2\n    Log    ${a}${b}\n"
+    (misc,) = [d for d in lint_text(text, Settings()) if d.code == "MISC04"]
+    assert misc.message.endswith("; fix all: robocop check --fix --select MISC04 <file>")
+
+
+def test_inline_if_info_promoted_with_command():
+    text = "*** Test Cases ***\nT\n    IF    $x\n        Log    a\n    END\n"
+    (misc,) = [d for d in lint_text(text, Settings()) if d.code == "MISC09"]
+    assert misc.severity == 2
+    assert misc.message.endswith("; fix all: robocop check --fix --select MISC09 <file>")
 
 
 def test_info_rule_without_command_not_promoted():

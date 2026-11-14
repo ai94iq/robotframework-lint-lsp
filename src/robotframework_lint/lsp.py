@@ -38,7 +38,7 @@ class Settings:
     min_severity: str = "warning"
     select: list[str] = field(default_factory=list)
     ignore: list[str] = field(default_factory=list)
-    group: bool = True
+    group: bool = False  # v4 A/B: grouped findings left more DEPR05/06 unfixed
 
     @classmethod
     def from_options(cls, options: object) -> Settings:
@@ -48,7 +48,7 @@ class Settings:
             severity = "warning"
         cap = opts.get("maxDiagnostics", 20)
         cap = cap if isinstance(cap, int) and cap > 0 else 20
-        group = opts.get("groupFindings", True) is not False
+        group = opts.get("groupFindings", False) is True
         return cls(cap, severity, _str_list(opts.get("select")), _str_list(opts.get("ignore")), group)
 
 
