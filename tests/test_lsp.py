@@ -54,33 +54,33 @@ def test_stdio_roundtrip_publishes_capped_diagnostics():
 
 def test_our_rule_reported_with_line():
     text = (SAMPLES / "arg_names_deprecated.robot").read_text(encoding="utf-8")
-    found = lint_text(text, Settings(max_diagnostics=100, min_severity="info", select=["RFL006"]))
+    found = lint_text(text, Settings(max_diagnostics=100, min_severity="info", select=["RFL006"], group=False))
     assert {d.range.start.line for d in found} == {6, 7, 8, 9}
     assert all(d.code == "RFL006" and len(d.message) <= 120 for d in found)
 
 
 def test_cap_default_twenty_plus_overflow_marker():
-    found = lint_text(NOISY, Settings(min_severity="info"))
-    total = len(lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info")))
+    found = lint_text(NOISY, Settings(min_severity="info", group=False))
+    total = len(lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info", group=False)))
     assert len(found) == 21
     assert found[-1].code == "overflow"
     assert found[-1].message == f"overflow {total - 20} more findings not shown (maxDiagnostics 20)"
 
 
 def test_no_marker_under_cap():
-    found = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info"))
+    found = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info", group=False))
     assert all(d.code != "overflow" for d in found)
 
 
 def test_severity_floor_filters():
-    info = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info"))
+    info = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info", group=False))
     errors = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="error"))
     assert len(errors) < len(info)
     assert all(d.severity == 1 for d in errors)
 
 
 def test_dedup_identical_findings():
-    found = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info"))
+    found = lint_text(NOISY, Settings(max_diagnostics=1000, min_severity="info", group=False))
     keys = [(d.range.start.line, d.code, d.message) for d in found]
     assert len(keys) == len(set(keys))
 
@@ -168,7 +168,31 @@ def test_deprecations_pass_warning_floor():
     assert "IMP02" in {d.code for d in lint_text(text, Settings(min_severity="info"))}
 
 
-def test_deprecation_message_has_fix_hint():
+def test_deprecation_message_has_fix_command():
     text = "*** Test Cases ***\nT\n    Set Test Variable    ${x}    1\n"
     (depr,) = [d for d in lint_text(text, Settings()) if d.code == "DEPR05"]
-    assert depr.message == "DEPR05 Set Test Variable used instead of VAR; use VAR    ${name}    value    scope=TEST|SUITE|GLOBAL"
+    assert depr.message == ("DEPR05 Set Test Variable used instead of VAR; "
+                            "fix all: robocop format --select ReplaceWithVAR <file>")
+
+
+def test_same_rule_grouped_into_one_diagnostic():
+    text = ("*** Test Cases ***\nT\n    Set Test Variable    ${x}    1\n    Log    x\n"
+            "    Set Test Variable    ${y}    2\n    Set Suite Variable    ${z}    3\n")
+    depr = [d for d in lint_text(text, Settings()) if d.code == "DEPR05"]
+    assert len(depr) == 1, depr
+    assert depr[0].range.start.line == 2
+    assert depr[0].message.startswith("DEPR05 x3 (lines 3,5,6) ")
+    assert depr[0].message.endswith("fix all: robocop format --select ReplaceWithVAR <file>")
+    assert len(depr[0].message) <= 120
+
+
+def test_fixable_info_rule_promoted_with_command():
+    text = "*** Keywords ***\nK\n    [Return]    1\n"
+    (depr,) = [d for d in lint_text(text, Settings()) if d.code == "DEPR11"]
+    assert depr.severity == 2
+    assert depr.message.endswith("; fix all: robocop check --fix --select DEPR11 <file>")
+
+
+def test_info_rule_without_command_not_promoted():
+    text = "*** Settings ***\nLibrary    String\nLibrary    Collections\n"
+    assert "IMP02" not in {d.code for d in lint_text(text, Settings())}

@@ -4,9 +4,15 @@ Robocop has no auto-fix for these, and agents without a hint spent extra
 edit rounds guessing the modern form or left the finding in place.
 """
 
+# One shell command fixes every finding of the rule in the file (checked on robocop 9.4.0).
+FIX_COMMANDS = {
+    "DEPR05": "robocop format --select ReplaceWithVAR <file>",
+    "DEPR06": "robocop format --select ReplaceWithVAR <file>",
+    **{rule: f"robocop check --fix --select {rule} <file>"
+       for rule in ("DEPR03", "DEPR04", "DEPR07", "DEPR08", "DEPR09", "DEPR10", "DEPR11")},
+}
+
 FIX_HINTS = {
-    "DEPR05": "use VAR    ${name}    value    scope=TEST|SUITE|GLOBAL",
-    "DEPR06": "use VAR    @{list}    a    b  or  VAR    &{dict}    k=v",
     "MISC09": "use inline IF: IF    cond    Keyword    ELSE    Keyword",
     "SPC03": "use exactly 2 empty lines between sections",
     "VAR02": "drop the assignment or use the variable",

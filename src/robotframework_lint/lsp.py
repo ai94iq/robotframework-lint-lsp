@@ -15,7 +15,7 @@ from pathlib import Path
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
 
-from .hints import FIX_HINTS
+from .hints import FIX_COMMANDS, FIX_HINTS
 from .lsp_navigation import register as register_navigation
 from .lsp_navigation import scan_workspace
 from .navigation import WorkspaceIndex
@@ -29,8 +29,7 @@ LSP_SEVERITY = {
     "warning": types.DiagnosticSeverity.Warning,
     "error": types.DiagnosticSeverity.Error,
 }
-# Agents left Info-level deprecations unfixed while they were hidden by the warning floor.
-PROMOTED_PREFIXES = ("DEPR", "RFL")
+MAX_GROUP_LINES = 6
 
 
 @dataclass
@@ -39,6 +38,7 @@ class Settings:
     min_severity: str = "warning"
     select: list[str] = field(default_factory=list)
     ignore: list[str] = field(default_factory=list)
+    group: bool = True
 
     @classmethod
     def from_options(cls, options: object) -> Settings:
@@ -48,7 +48,8 @@ class Settings:
             severity = "warning"
         cap = opts.get("maxDiagnostics", 20)
         cap = cap if isinstance(cap, int) and cap > 0 else 20
-        return cls(cap, severity, _str_list(opts.get("select")), _str_list(opts.get("ignore")))
+        group = opts.get("groupFindings", True) is not False
+        return cls(cap, severity, _str_list(opts.get("select")), _str_list(opts.get("ignore")), group)
 
 
 def _str_list(value: object) -> list[str]:
@@ -87,12 +88,13 @@ def lint_text(text: str, settings: Settings, suffix: str = ".robot") -> list[typ
     """Lint a buffer and return capped, filtered, deduplicated LSP diagnostics."""
     floor = SEVERITY_ORDER[settings.min_severity]
     seen: set[tuple[int, str, str]] = set()
-    result: list[types.Diagnostic] = []
+    groups: dict[str, list[tuple]] = {}
     found = sorted(_run_robocop(text, suffix, settings), key=lambda d: (d.range.start.line, d.range.start.character))
     for diag in found:
         rule_id = diag.rule.rule_id
         severity = _severity_name(diag.severity)
-        if severity == "info" and rule_id.startswith(PROMOTED_PREFIXES):
+        # Promote only Info rules one command fixes; each promoted finding costs agents an edit turn.
+        if severity == "info" and rule_id in FIX_COMMANDS:
             severity = "warning"
         if SEVERITY_ORDER[severity] < floor:
             continue
@@ -101,7 +103,10 @@ def lint_text(text: str, settings: Settings, suffix: str = ".robot") -> list[typ
         if key in seen:
             continue
         seen.add(key)
-        result.append(_to_lsp(diag, rule_id, line, severity))
+        group_key = rule_id if settings.group else f"{rule_id}:{len(seen)}"
+        groups.setdefault(group_key, []).append((diag, rule_id, line, severity))
+    result = [_group_to_lsp(members) for members in groups.values()]
+    result.sort(key=lambda d: (d.range.start.line, d.range.start.character))
     if len(result) <= settings.max_diagnostics:
         return result
     return result[: settings.max_diagnostics] + [_overflow(len(result) - settings.max_diagnostics, settings)]
@@ -118,13 +123,26 @@ def _overflow(hidden: int, settings: Settings) -> types.Diagnostic:
     )
 
 
-def _to_lsp(diag, rule_id: str, line: int, severity: str) -> types.Diagnostic:
+def _group_to_lsp(members: list[tuple]) -> types.Diagnostic:
+    """One diagnostic per rule, anchored at its first finding, with the worst severity."""
+    diag, rule_id, line, _ = members[0]
+    severity = max((m[3] for m in members), key=SEVERITY_ORDER.__getitem__)
+    count = ""
+    if len(members) > 1:
+        lines = [str(m[2] + 1) for m in members[:MAX_GROUP_LINES]]
+        more = ",..." if len(members) > MAX_GROUP_LINES else ""
+        count = f"x{len(members)} (lines {','.join(lines)}{more}) "
+    return _to_lsp(diag, rule_id, line, severity, count)
+
+
+def _to_lsp(diag, rule_id: str, line: int, severity: str, count: str = "") -> types.Diagnostic:
     start_col = max(diag.range.start.character - 1, 0)
     end_line = max(diag.range.end.line - 1, line)
     end_col = max(diag.range.end.character - 1, 0)
-    hint = FIX_HINTS.get(rule_id)
+    command = FIX_COMMANDS.get(rule_id)
+    hint = f"fix all: {command}" if command else FIX_HINTS.get(rule_id)
     suffix = f"; {hint}" if hint else ""
-    base = f"{rule_id} {diag.message}"
+    base = f"{rule_id} {count}{diag.message}"
     room = MAX_MESSAGE - len(suffix)
     if len(base) > room:
         base = base[: room - 3] + "..."
