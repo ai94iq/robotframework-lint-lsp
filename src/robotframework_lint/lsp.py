@@ -15,6 +15,7 @@ from pathlib import Path
 from lsprotocol import types
 from pygls.lsp.server import LanguageServer
 
+from .hints import FIX_HINTS
 from .lsp_navigation import register as register_navigation
 from .lsp_navigation import scan_workspace
 from .navigation import WorkspaceIndex
@@ -28,7 +29,8 @@ LSP_SEVERITY = {
     "warning": types.DiagnosticSeverity.Warning,
     "error": types.DiagnosticSeverity.Error,
 }
-THRESHOLD = {"info": "I", "warning": "W", "error": "E"}
+# Agents left Info-level deprecations unfixed while they were hidden by the warning floor.
+PROMOTED_PREFIXES = ("DEPR", "RFL")
 
 
 @dataclass
@@ -71,7 +73,7 @@ def _run_robocop(text: str, suffix: str, settings: Settings) -> list:
         linter_config = RawLinterConfig(
             select=settings.select or None,
             ignore=settings.ignore or None,
-            threshold=RuleSeverity(THRESHOLD[settings.min_severity]),
+            threshold=RuleSeverity("I"),  # floor applied after promotion in lint_text
             custom_rules=[str(RULES_DIR)],
             return_result=True,
         )
@@ -88,10 +90,12 @@ def lint_text(text: str, settings: Settings, suffix: str = ".robot") -> list[typ
     result: list[types.Diagnostic] = []
     found = sorted(_run_robocop(text, suffix, settings), key=lambda d: (d.range.start.line, d.range.start.character))
     for diag in found:
+        rule_id = diag.rule.rule_id
         severity = _severity_name(diag.severity)
+        if severity == "info" and rule_id.startswith(PROMOTED_PREFIXES):
+            severity = "warning"
         if SEVERITY_ORDER[severity] < floor:
             continue
-        rule_id = diag.rule.rule_id
         line = max(diag.range.start.line - 1, 0)
         key = (line, rule_id, diag.message)
         if key in seen:
@@ -118,9 +122,13 @@ def _to_lsp(diag, rule_id: str, line: int, severity: str) -> types.Diagnostic:
     start_col = max(diag.range.start.character - 1, 0)
     end_line = max(diag.range.end.line - 1, line)
     end_col = max(diag.range.end.character - 1, 0)
-    message = f"{rule_id} {diag.message}"
-    if len(message) > MAX_MESSAGE:
-        message = message[: MAX_MESSAGE - 3] + "..."
+    hint = FIX_HINTS.get(rule_id)
+    suffix = f"; {hint}" if hint else ""
+    base = f"{rule_id} {diag.message}"
+    room = MAX_MESSAGE - len(suffix)
+    if len(base) > room:
+        base = base[: room - 3] + "..."
+    message = base + suffix
     return types.Diagnostic(
         range=types.Range(types.Position(line, start_col), types.Position(end_line, end_col)),
         message=message,

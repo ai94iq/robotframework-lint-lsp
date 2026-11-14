@@ -156,3 +156,19 @@ def test_diagnostic_columns_utf16():
 def test_diagnostic_columns_utf8():
     # same prefix is 17 utf-8 bytes (ä 2, emoji 4)
     assert _trailing_space_start("utf-8") == 17
+
+
+def test_deprecations_pass_warning_floor():
+    # DEPR rules are Info in robocop, but agents left them unfixed when hidden
+    text = ("*** Settings ***\nLibrary    String\nLibrary    Collections\n\n\n*** Test Cases ***\nT\n"
+            "    Set Test Variable    ${x}    1\n    ${items}    Create List    a\n")
+    found = {d.code: d.severity for d in lint_text(text, Settings())}
+    assert found.get("DEPR05") == 2 and found.get("DEPR06") == 2, found
+    assert "IMP02" not in found  # Info import order stays hidden
+    assert "IMP02" in {d.code for d in lint_text(text, Settings(min_severity="info"))}
+
+
+def test_deprecation_message_has_fix_hint():
+    text = "*** Test Cases ***\nT\n    Set Test Variable    ${x}    1\n"
+    (depr,) = [d for d in lint_text(text, Settings()) if d.code == "DEPR05"]
+    assert depr.message == "DEPR05 Set Test Variable used instead of VAR; use VAR    ${name}    value    scope=TEST|SUITE|GLOBAL"
