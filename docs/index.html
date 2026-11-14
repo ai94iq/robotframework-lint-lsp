@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>robotframework-lint: Robot Framework lint for coding agents</title>
+<meta name="description" content="A Robot Framework language server and auto-fix hook for Claude Code, Codex and other agents. Agents leave 70 to 100 percent fewer lint issues, measured.">
+<meta property="og:title" content="robotframework-lint: Robot Framework lint for coding agents">
+<meta property="og:description" content="Lint findings reach the agent as one short line each; safe fixes are applied before it reads them.">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23ffe24a'/%3E%3Cg fill='none' stroke='%2316181d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7h7'/%3E%3Cpath d='M7 12h10'/%3E%3Cpath d='M7 17h5'/%3E%3Cpath d='M15 16l2 2 3-4'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preload" href="fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/fragment-mono.woff2" as="font" type="font/woff2" crossorigin>
+<script>document.documentElement.classList.add('js')</script>
+<style>
+@font-face { font-family: "Bricolage Grotesque"; src: url(fonts/bricolage-grotesque.woff2) format("woff2"); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: "Fragment Mono"; src: url(fonts/fragment-mono.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+
+:root {
+  color-scheme: light dark;
+  --page: #ffffff; --ink: #16181d; --mute: #62676f; --line: #e4e5e8; --quiet: #d4d6da; --panel: #d8dae0;
+  --mark: #ffe24a; --on-mark: #16181d;
+  --sans: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Fragment Mono", ui-monospace, Menlo, Consolas, monospace;
+  --swipe: cubic-bezier(.3, .7, .2, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --page: #15171c; --ink: #eceef0; --mute: #a2a7af; --line: #2c2f36; --quiet: #41454e; --panel: #1e2126; }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 400 18px/1.55 var(--sans); }
+::selection { background: var(--mark); color: var(--on-mark); }
+a { color: inherit; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+h1, h2, h3, p, figure, pre, ul { margin: 0; }
+code, pre { font-family: var(--mono); }
+.wrap { width: min(1160px, 100% - 48px); margin: 0 auto; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* highlighter stroke */
+.hl, .on .t {
+  padding: .02em .24em; margin: 0 -.24em; border-radius: .1em .24em .16em .12em;
+  background: linear-gradient(var(--mark), var(--mark)) no-repeat 0 62% / 100% var(--mh, 100%);
+  color: var(--on-mark);
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 24px; padding: 22px 0; }
+.brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 700; text-decoration: none; }
+.brand svg { width: 24px; height: 24px; flex: none; }
+nav { display: flex; flex-wrap: wrap; gap: 0 22px; font-size: 16px; }
+nav a { padding: 6px 0; text-decoration: none; }
+nav a:hover { text-decoration: underline; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.14fr); gap: 72px; padding: 56px 0 96px; align-items: start; }
+h1 { font-size: clamp(50px, 6.3vw, 84px); font-weight: 800; line-height: 1.12; letter-spacing: -.015em; }
+h1 .hl { --mh: 80%; padding: 0 .14em; margin: 0 -.14em; border-radius: .06em .12em .08em .05em; }
+.lede { margin-top: 26px; font-size: 21px; line-height: 1.45; max-width: 26em; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+.btn { display: inline-flex; align-items: center; gap: 9px; min-height: 46px; padding: 0 16px; border: 1.5px solid var(--ink); border-radius: 8px; background: none; color: var(--ink); font: 600 16px/1.2 var(--sans); text-decoration: none; cursor: pointer; }
+.btn svg { width: 17px; height: 17px; flex: none; }
+.btn.copy { background: var(--ink); color: var(--page); font: 400 14px/1.2 var(--mono); }
+.btn:hover { background: var(--mark); border-color: var(--mark); color: var(--on-mark); }
+.copied { min-height: 28px; margin-top: 8px; font-size: 16px; color: var(--mute); }
+
+#flow { padding: 18px 20px; border: 1px solid var(--line); border-radius: 8px; }
+.js .tabs { display: flex; }
+.tabs button { min-height: 36px; padding: 0 9px; border: 0; border-radius: 5px; background: none; color: var(--mute); font: 400 15px/1 var(--mono); cursor: pointer; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-pressed="true"] { background: var(--mark); color: var(--on-mark); }
+.fname { font: 400 13.5px/22px var(--mono); }
+.fname + .file { margin-top: 8px; }
+.file + .fname { margin-top: 26px; }
+.file { margin: 0; padding: 0; list-style: none; counter-reset: ln; color: var(--ink); font: 400 13.5px/22px var(--mono); }
+.file li { position: relative; min-height: 22px; padding-left: 3em; counter-increment: ln; white-space: pre-wrap; overflow-wrap: anywhere; }
+.file li::before { content: counter(ln); position: absolute; left: 0; width: 2em; text-align: right; }
+.out { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--ink); font-size: 13px; line-height: 20px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* keywords / reading load */
+h2 .hl { --mh: 72%; padding: 0 .12em; margin: 0 -.12em; border-radius: .06em .12em .08em .05em; }
+h2 { font-size: clamp(32px, 4.2vw, 52px); font-weight: 800; line-height: 1.1; letter-spacing: -.02em; max-width: 18em; text-wrap: balance; }
+.sub { margin-top: 16px; max-width: 38em; color: var(--mute); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 26px; margin-top: 30px; font-size: 16px; color: var(--mute); }
+.legend i { display: inline-block; width: 22px; height: 12px; margin-right: 8px; border-radius: 2px; background: var(--quiet); }
+.legend i.hit { background: var(--mark); }
+.dims { --reach: .78; display: grid; grid-template-columns: minmax(0, 1fr); gap: 26px; max-width: 900px; margin-top: 28px; }
+.qh { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 6px; }
+.qh h3 { font-size: 18px; font-weight: 600; }
+.qh span { flex: none; font-weight: 700; font-size: 16px; }
+.row { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.bar { flex: 0 1 calc(var(--w) * var(--reach)); min-width: 0; height: 14px; border-radius: 2px; background: linear-gradient(var(--quiet), var(--quiet)) no-repeat 0 0 / 100% 100%; }
+.bar.hit { background-image: linear-gradient(var(--mark), var(--mark)); }
+.val { flex: none; font: 400 13.5px/1.3 var(--mono); color: var(--mute); }
+.note { margin-top: 26px; font-size: 16px; color: var(--mute); }
+
+/* features and setup */
+.ways { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; margin-top: 36px; align-items: start; }
+h3 { font-size: 18px; font-weight: 600; }
+.ways h3 { margin-bottom: 12px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 16px; }
+th, td { text-align: left; padding: 5px 24px 5px 0; vertical-align: top; }
+th { color: var(--mute); font-weight: 400; }
+td code { font-size: 14px; white-space: nowrap; }
+.feats { margin-top: 40px; }
+.feats table { width: 100%; }
+.feats td:first-child { width: 30%; min-width: 230px; font-weight: 600; }
+.feats td { padding-top: 9px; padding-bottom: 9px; }
+.ways pre { font-size: 14px; line-height: 24px; overflow-x: auto; }
+.ways pre + p { margin-top: 12px; font-size: 16px; color: var(--mute); }
+.shots { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; margin-top: 48px; }
+.shot-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+.shots img { display: block; width: 100%; height: auto; }
+figcaption { margin-top: 8px; max-width: 46em; font-size: 16px; color: var(--mute); }
+figcaption code { font-size: 14px; color: var(--ink); }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 48px; margin-top: 36px; }
+.cols ul { padding: 0; margin-top: 10px; list-style: none; font-size: 16px; color: var(--mute); }
+.cols li { padding: 2px 0; }
+.cols p { margin-top: 10px; font-size: 16px; color: var(--mute); }
+
+footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 24px; padding: 26px 0 40px; border-top: 1px solid var(--line); color: var(--mute); font-size: 16px; }
+
+/* motion */
+@keyframes swipe { from { background-size: 0 var(--mh, 100%); color: var(--from, var(--mute)); } }
+@media (prefers-reduced-motion: no-preference) {
+  h1 .hl { --from: var(--ink); animation: swipe .4s var(--swipe) .3s backwards; }
+  .on .t { animation: swipe .42s var(--swipe) var(--d, 0s) backwards; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+@media (max-width: 960px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 44px; padding: 32px 0 64px; }
+  h1 { font-size: clamp(40px, 13.4vw, 84px); }
+  .ways { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .wrap { width: calc(100% - 32px); }
+  body { font-size: 17px; }
+  .lede { font-size: 19px; }
+  section { padding: 52px 0; }
+  .btn.copy { font-size: 14px; padding: 0 12px; gap: 7px; }
+  .file { font-size: 13px; line-height: 20px; }
+  .file li { min-height: 20px; padding-left: 2.6em; }
+  .fname, .out { font-size: 13px; line-height: 18px; }
+  .tabs button { min-height: 44px; }
+  nav a { min-height: 44px; display: inline-flex; align-items: center; }
+  .dims { --reach: .5; }
+  .feats thead { display: none; }
+  .feats tr, .feats td { display: block; width: auto; padding: 0; }
+  .feats tr + tr { margin-top: 18px; }
+  .feats td code { white-space: normal; overflow-wrap: anywhere; }
+  .cols { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .shot-scroll { overflow-x: visible; border: none; }
+  .shot-scroll img { min-width: 0; width: 100%; }
+}
+<style>
+.diag { color: var(--mute); }
+.diag b { color: var(--ink); font-weight: 400; }
+.tabs { flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+.agent[hidden] { display: none; }
+section { padding: 80px 0; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<a href="#top" style="position:absolute;left:-9999px;top:0;padding:8px;background:var(--mark);color:var(--on-mark);z-index:100" onfocus="this.style.left='0'" onblur="this.style.left='-9999px'">Skip to content</a>
+<div class="wrap" id="top">
+
+  <header>
+    <a class="brand" href="#top">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12l3 3 5-6"/></svg>
+      robotframework-lint
+    </a>
+    <nav aria-label="Main">
+      <a href="#results">Results</a><a href="#how">How it works</a><a href="#get-started">Get started</a><a href="benchmarks.html">Benchmarks</a><span style="color:var(--mute)">|</span><a href="https://github.com/ai94iq/robotframework-lint">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div>
+        <h1>Lint the edit, not the <mark class="hl">review.</mark></h1>
+        <p class="lede">A Robot Framework language server and auto-fix hook for coding agents. Findings arrive as one short line each, and safe fixes are applied before the agent reads them.</p>
+        <div class="actions">
+          <button class="btn copy" type="button" data-copy="pip install git+https://github.com/ai94iq/robotframework-lint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>
+            Copy pip install command
+          </button>
+          <a class="btn" href="https://github.com/ai94iq/robotframework-lint/blob/main/docs/agents.md">Agent setup guide</a>
+        </div>
+        <p class="copied" role="status" aria-live="polite"></p>
+      </div>
+
+      <div id="flow">
+        <p class="fname">tests/login.robot | after the agent's edit</p>
+        <ol class="file" aria-label="Sample file">
+          <li><span class="t">*** Test Cases ***</span></li>
+          <li><span class="t">Valid Login</span></li>
+          <li class="on" style="--d:.75s"><span class="t">    VAR    ${user}    alice    scope=TEST</span></li>
+          <li><span class="t">    Open Login Page</span></li>
+          <li class="on" style="--d:.95s"><span class="t">    IF    $user    Submit Credentials    ${user}</span></li>
+        </ol>
+        <p class="out"><span class="diag">hook  Set Test Variable -&gt; VAR, IF block -&gt; inline IF (no agent turn)</span>
+<span class="diag">lsp   <b>LEN03 Keyword 'Open Login Page' has too many keywords inside (12/10)</b></span></p>
+      </div>
+    </div>
+
+    <section id="results">
+      <h2>Fewer issues left, <mark class="hl">measured.</mark></h2>
+      <p class="sub">Lint issues left per run on one task: write two Robot suites and run them. Haiku, 25 runs per arm. Every run passed its tests.</p>
+      <div class="legend"><span><i class="hit"></i>robotframework-lint LSP v6</span><span><i></i>other arms</span></div>
+      <div class="dims">
+        <div><div class="qh"><h3>No LSP</h3><span>18.5</span></div><div class="row"><div class="bar" style="--w:100%"></div><span class="val">$0.028 / run</span></div></div>
+        <div><div class="qh"><h3>Robocop MCP</h3><span>13.2</span></div><div class="row"><div class="bar" style="--w:71%"></div><span class="val">$0.036 / run</span></div></div>
+        <div><div class="qh"><h3>robotframework-lint LSP</h3><span>4.7</span></div><div class="row"><div class="bar hit" style="--w:25%"></div><span class="val">$0.034 / run</span></div></div>
+      </div>
+      <p class="note">At medium effort the LSP cost less than the MCP on Haiku, Sonnet and Opus, and left the same or fewer issues. <a href="benchmarks.html">All versions, models and the harness.</a></p>
+    </section>
+
+    <section id="how">
+      <h2>Two parts, <mark class="hl">one loop.</mark></h2>
+      <div class="ways">
+        <div>
+          <h3>Auto-fix hook</h3>
+          <p class="sub">After every Edit or Write on a <code>.robot</code> or <code>.resource</code> file, <code>robotframework-lint-autofix</code> runs robocop's safe fixes: <code>Set Test Variable</code> and <code>Create List</code> become <code>VAR</code>, old <code>[Return]</code> and <code>Run Keyword If</code> become <code>RETURN</code> and <code>IF</code>, one assignment style per file. It prints nothing and never blocks the edit.</p>
+        </div>
+        <div>
+          <h3>Language server</h3>
+          <p class="sub"><code>robotframework-lint-lsp</code> lints the buffer with the robocop defaults plus six RF 7.5 rules. It sends warnings and errors only, at most 20 per file, one line each, and answers keyword definition, references, hover and symbols.</p>
+        </div>
+      </div>
+      <div class="feats table-wrap">
+        <table>
+          <thead><tr><th>Setting</th><th>Default</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>maxDiagnostics</code></td><td>20</td><td>Findings per file, then one overflow line with the count cut.</td></tr>
+            <tr><td><code>minSeverity</code></td><td>warning</td><td>Floor: info, warning or error. Fixable Info rules are raised to warning.</td></tr>
+            <tr><td><code>select</code>, <code>ignore</code></td><td>[]</td><td>Robocop rule ids to keep or drop.</td></tr>
+            <tr><td><code>groupFindings</code></td><td>false</td><td>One diagnostic per rule. Off: it left more findings unfixed in tests.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="get-started">
+      <h2>What you need, and <mark class="hl">where it runs.</mark></h2>
+      <div class="cols">
+        <div><h3>Needs</h3><ul><li>Python 3.11 or later</li><li>Robot Framework 7.5</li><li>Robocop 9.4</li></ul></div>
+        <div><h3>Agents</h3><ul><li>Claude Code: plugin with LSP and hook</li><li>opencode and crush: <code>lsp</code> config</li><li>Codex: through an LSP to MCP bridge</li></ul><p><a href="https://github.com/ai94iq/robotframework-lint/blob/main/docs/agents.md">Setup for each agent</a></p></div>
+        <div><h3>Editors</h3><ul><li>Any LSP client over stdio</li><li>Command <code>robotframework-lint-lsp</code></li><li>Language id <code>robotframework</code></li></ul></div>
+      </div>
+    </section>
+  </main>
+
+  <footer><span>MIT license</span><span>Rules follow Robot Framework when Robocop and the RF docs disagree.</span></footer>
+</div>
+<script>
+(function () {
+  var status = document.querySelector('.copied');
+  function execCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '-9999px';
+      document.body.appendChild(ta); ta.select();
+      var ok = document.execCommand('copy'); document.body.removeChild(ta); return ok;
+    } catch (e) { return false; }
+  }
+  function copy(text) {
+    var done = function () { status.textContent = 'Copied.'; };
+    var fail = function () { status.textContent = 'Select the text and copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { execCopy(text) ? done() : fail(); });
+    } else { execCopy(text) ? done() : fail(); }
+  }
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () { copy(b.getAttribute('data-copy')); });
+  });
+})();
+</script>
+</body>
+</html>

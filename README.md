@@ -58,9 +58,23 @@ and change (debounced 0.4 s). Output is kept small for AI agents:
 - warnings and errors only by default (`minSeverity`: info, warning, error)
 - identical findings on one line reported once; no related information
 
+- a finding robocop can fix ends with `fix all: <command>`; fixable Info
+  rules are raised to warning
+
 Settings go in `initializationOptions`: `maxDiagnostics`, `minSeverity`,
-`select`, `ignore`. For Claude Code, copy `.lsp.json` from this repo into
-your plugin; it maps `.robot` and `.resource` to `robotframework`.
+`select`, `ignore`, `groupFindings` (default off). For Claude Code, copy
+`.lsp.json` from this repo into your plugin; it maps `.robot` and
+`.resource` to `robotframework`.
+
+The plugin also ships a PostToolUse hook, `robotframework-lint-autofix`
+(`hooks/hooks.json`): after each Edit or Write of a `.robot` or `.resource`
+file it applies robocop's safe fixes, so the agent only sees what is left.
+
+Setup for Claude Code, opencode, Crush, Codex and GLM:
+[docs/agents.md](docs/agents.md). Measured results (cost, turns and issues
+left, with and without the LSP, per model):
+[docs/benchmarks.html](docs/benchmarks.html)
+and [docs/benchmarks](docs/benchmarks).
 
 The server also answers code navigation for user keywords:
 

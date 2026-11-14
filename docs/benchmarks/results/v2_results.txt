@@ -1,0 +1,19 @@
+
+lint (n=25)
+  cost          mean  0.03592  median   0.0359  sum    0.898
+  turns         mean    20.68  median       20  sum      517
+  seconds       mean    166.1  median    163.3  sum     4152
+  edits         mean    10.88  median       11  sum      272
+  robot_runs    mean     5.96  median        6  sum      149
+  mcp_calls     mean        0  median        0  sum        0
+  dryrun_fail   mean        0  median        0  sum        0
+  run_pass      mean     13.2  median       13  sum      330
+  run_fail      mean        0  median        0  sum        0
+  all_green     mean        1  median        1  sum       25
+  lint_issues   mean    12.96  median       11  sum      324
+== v2_runs
+     62  DEPR05
+     46  DEPR06
+== runs
+    408  DEPR05
+    146  DEPR06

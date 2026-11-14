@@ -1,0 +1,9 @@
+Build two Robot Framework 7 projects in this folder, in pure Robot Framework (no Python files), using only BuiltIn, Collections, String and OperatingSystem.
+
+1. calculator.resource: keywords "Add", "Subtract", "Multiply", "Divide" (each takes two numbers and returns the result; Divide fails with the message "division by zero" when the divisor is 0) and "Evaluate Expression" that takes a string like "2 + 3 * 4" (numbers and + - * / separated by single spaces) and returns the result with normal operator precedence, without using the BuiltIn Evaluate keyword.
+   calculator.robot: tests that import calculator.resource and check 2 + 3 = 5, 10 / 4 = 2.5, division by zero fails with the right message, "2 + 3 * 4" gives 14, "8 / 2 - 1" gives 3, and a data-driven test template with at least 4 expression rows.
+
+2. sorter.resource: a keyword "Sort Files By Extension" that takes a folder path and moves every file into a subfolder named after its extension (no extension goes to "other"), and returns a dictionary of extension to file count.
+   sorter.robot: a Suite Setup that creates a temporary folder under ${TEMPDIR} with a.txt, b.txt, c.csv, d.png and README; tests that run the sorter and check the folders, the moved files and the returned counts; a Suite Teardown that removes the folder.
+
+Every suite and test has documentation. Use current Robot Framework style. Both suites must pass when run with `robot calculator.robot sorter.robot`. When you are done, reply done.

@@ -1,0 +1,39 @@
+
+lint (n=3)
+  cost          mean   0.1856  median   0.1771  sum   0.5567
+  turns         mean    11.67  median       12  sum       35
+  seconds       mean    57.91  median    64.01  sum    173.7
+  edits         mean        6  median        6  sum       18
+  robot_runs    mean    3.333  median        4  sum       10
+  mcp_calls     mean        0  median        0  sum        0
+  dryrun_fail   mean        0  median        0  sum        0
+  run_pass      mean        9  median        9  sum       27
+  run_fail      mean        0  median        0  sum        0
+  all_green     mean        1  median        1  sum        3
+  lint_issues   mean        2  median        2  sum        6
+
+mcp (n=3)
+  cost          mean    0.319  median   0.3163  sum   0.9571
+  turns         mean       27  median       25  sum       81
+  seconds       mean    86.69  median    85.45  sum    260.1
+  edits         mean    13.67  median       13  sum       41
+  robot_runs    mean    5.333  median        5  sum       16
+  mcp_calls     mean        4  median        4  sum       12
+  dryrun_fail   mean        0  median        0  sum        0
+  run_pass      mean    10.33  median       10  sum       31
+  run_fail      mean        0  median        0  sum        0
+  all_green     mean        1  median        1  sum        3
+  lint_issues   mean    2.667  median        1  sum        8
+
+nolint (n=3)
+  cost          mean   0.1714  median   0.1605  sum   0.5143
+  turns         mean    8.667  median        9  sum       26
+  seconds       mean    57.12  median    59.63  sum    171.4
+  edits         mean        5  median        5  sum       15
+  robot_runs    mean    2.667  median        3  sum        8
+  mcp_calls     mean        0  median        0  sum        0
+  dryrun_fail   mean        0  median        0  sum        0
+  run_pass      mean        9  median        9  sum       27
+  run_fail      mean        0  median        0  sum        0
+  all_green     mean        1  median        1  sum        3
+  lint_issues   mean       12  median       13  sum       36
