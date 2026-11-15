@@ -229,7 +229,7 @@ def test_close_cancels_pending_publish(monkeypatch):
 
     monkeypatch.setattr(lsp, "DEBOUNCE_SECONDS", 0.05)
     calls: list[str] = []
-    ls = SimpleNamespace(pending={}, publish=calls.append,
+    ls = SimpleNamespace(pending={}, robotcode={}, publish=calls.append,
                          text_document_publish_diagnostics=lambda p: None)
     params = SimpleNamespace(text_document=SimpleNamespace(uri="file:///x.robot"))
 

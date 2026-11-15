@@ -104,6 +104,12 @@ Set them in `initializationOptions` of your `.lsp.json`:
 | `select` | all | Rule IDs to report only |
 | `ignore` | none | Rule IDs to drop |
 | `groupFindings` | off | One line per rule with its line numbers |
+| `robotcodeCommand` | off | Command list for `robotcode` in your project venv, for example `["D:/proj/.venv/Scripts/robotcode"]`. On save it adds up to 5 errors robocop cannot see: unresolved keywords, variables and imports |
+
+`robotcodeCommand` runs on the saved file in your workspace, not a temp
+copy, and robotcode imports your project's libraries to resolve them. Set
+it only for projects whose code you trust. Point it at the project's own
+venv: a venv without the project's libraries reports false import errors.
 
 ## Rules
 

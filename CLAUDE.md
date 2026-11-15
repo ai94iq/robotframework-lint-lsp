@@ -69,7 +69,10 @@ claude plugin validate .
 - The hook and the server lint a temp copy, never the repo in place. Keep
   `-I`, the temp cwd, `--config`/`--root` in the temp dir and
   `ignore_file_config=True`: a repo or a folder above TMPDIR must not be
-  able to load code or switch rules off.
+  able to load code or switch rules off. One exception: the opt-in
+  `robotcodeCommand` tier (`robotcode_tier.py`) runs on the saved file in
+  the workspace, because robotcode resolves imports from the real path.
+  It stays off by default, uses an argument list and never a shell.
 - The hook must never block or fail an edit: it exits 0 and never writes
   over a newer edit.
 - Dependencies are exact pins; bump them on purpose, with the full suite.

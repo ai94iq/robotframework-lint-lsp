@@ -15,12 +15,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from lsprotocol import types
+from pygls import uris
 from pygls.lsp.server import LanguageServer
 
 from .hints import FIX_COMMANDS, FIX_HINTS
 from .lsp_navigation import register as register_navigation
 from .lsp_navigation import scan_workspace
 from .navigation import WorkspaceIndex
+from .robotcode_tier import analyze as robotcode_analyze
 
 RULES_DIR = Path(__file__).parent / "rules"
 MAX_MESSAGE = 120
@@ -42,6 +44,7 @@ class Settings:
     select: list[str] = field(default_factory=list)
     ignore: list[str] = field(default_factory=list)
     group: bool = False  # v4 A/B: grouped findings left more DEPR05/06 unfixed
+    robotcode: list[str] = field(default_factory=list)  # empty: tier off
 
     @classmethod
     def from_options(cls, options: object) -> Settings:
@@ -52,7 +55,8 @@ class Settings:
         cap = opts.get("maxDiagnostics", 20)
         cap = cap if isinstance(cap, int) and cap > 0 else 20
         group = opts.get("groupFindings", False) is True
-        return cls(cap, severity, _str_list(opts.get("select")), _str_list(opts.get("ignore")), group)
+        return cls(cap, severity, _str_list(opts.get("select")), _str_list(opts.get("ignore")), group,
+                   _str_list(opts.get("robotcodeCommand")))
 
 
 def _str_list(value: object) -> list[str]:
@@ -167,6 +171,8 @@ class RflintServer(LanguageServer):
         self.settings = Settings()
         self.pending: dict[str, asyncio.Task] = {}
         self.index = WorkspaceIndex()
+        self.root: Path | None = None
+        self.robotcode: dict[str, list[types.Diagnostic]] = {}  # last on-save result per uri
 
     def publish(self, uri: str) -> None:
         doc = self.workspace.get_text_document(uri)
@@ -177,7 +183,7 @@ class RflintServer(LanguageServer):
             return
         try:
             self.index.update(uri, doc.source)
-            diagnostics = lint_text(doc.source, self.settings, suffix)
+            diagnostics = self.robotcode.get(uri, []) + lint_text(doc.source, self.settings, suffix)
             for diag in diagnostics:  # robocop columns are code points
                 diag.range = self.workspace.position_codec.range_to_client_units(doc.lines, diag.range)
         except Exception as exc:  # parse errors must not kill the server
@@ -196,6 +202,8 @@ register_navigation(server)
 def on_initialize(ls: RflintServer, params: types.InitializeParams) -> None:
     ls.settings = Settings.from_options(params.initialization_options)
     scan_workspace(ls.index, params.root_uri)
+    if params.root_uri:
+        ls.root = Path(uris.to_fs_path(params.root_uri))
 
 
 @server.feature(types.TEXT_DOCUMENT_DID_OPEN)
@@ -204,8 +212,13 @@ def on_open(ls: RflintServer, params: types.DidOpenTextDocumentParams) -> None:
 
 
 @server.feature(types.TEXT_DOCUMENT_DID_SAVE)
-def on_save(ls: RflintServer, params: types.DidSaveTextDocumentParams) -> None:
-    ls.publish(params.text_document.uri)
+async def on_save(ls: RflintServer, params: types.DidSaveTextDocumentParams) -> None:
+    uri = params.text_document.uri
+    if ls.settings.robotcode and ls.root:
+        # robotcode reads the saved file in place; a cold run takes seconds, so off the event loop.
+        path = Path(uris.to_fs_path(uri))
+        ls.robotcode[uri] = await asyncio.to_thread(robotcode_analyze, ls.settings.robotcode, path, ls.root)
+    ls.publish(uri)
 
 
 @server.feature(types.TEXT_DOCUMENT_DID_CHANGE)
@@ -228,6 +241,7 @@ def on_close(ls: RflintServer, params: types.DidCloseTextDocumentParams) -> None
     pending = ls.pending.pop(params.text_document.uri, None)
     if pending:
         pending.cancel()  # a late publish would bring back diagnostics for a closed file
+    ls.robotcode.pop(params.text_document.uri, None)
     ls.text_document_publish_diagnostics(types.PublishDiagnosticsParams(uri=params.text_document.uri, diagnostics=[]))
 
 
