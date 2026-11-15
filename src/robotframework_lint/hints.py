@@ -11,6 +11,7 @@ FIX_COMMANDS = {
     **{rule: f"robocop check --fix --select {rule} <file>"
        for rule in ("DEPR03", "DEPR04", "DEPR07", "DEPR08", "DEPR09", "DEPR10", "DEPR11",
                     "MISC04", "MISC09", "VAR01")},
+    "RFL001": "robocop check --fix --custom-rules robotframework_lint --select RFL001 <file>",
 }
 
 FIX_HINTS = {

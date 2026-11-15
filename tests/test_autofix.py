@@ -101,3 +101,11 @@ def test_temp_parent_config_cannot_steer_fix(tmp_path, monkeypatch):
     path.write_text(LEGACY, encoding="utf-8")
     fix_file(path)
     assert "IF    $x    Log" in path.read_text(encoding="utf-8")
+
+
+def test_fix_file_adds_zip_mode(tmp_path):
+    path = tmp_path / "t.robot"
+    path.write_text("*** Test Cases ***\nT\n    FOR    ${a}    ${b}    IN ZIP    ${X}    ${Y}\n"
+                    "        Log    ${a}\n    END\n", encoding="utf-8")
+    fix_file(path)
+    assert "IN ZIP    ${X}    ${Y}    mode=SHORTEST\n" in path.read_text(encoding="utf-8")

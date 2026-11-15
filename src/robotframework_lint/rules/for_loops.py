@@ -2,14 +2,15 @@
 
 from robot.api import Token
 
-from robocop.linter.rules import Rule, RuleSeverity, VisitorChecker
+from robocop.linter.fix import Fix, FixApplicability, FixAvailability, TextEdit
+from robocop.linter.rules import FixableRule, RuleSeverity, VisitorChecker
 
 RF_70_NOTES = (
     "https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.0.rst"
 )
 
 
-class ForInZipWithoutModeRule(Rule):
+class ForInZipWithoutModeRule(FixableRule):
     """
     FOR IN ZIP without an explicit ``mode``.
 
@@ -30,6 +31,10 @@ class ForInZipWithoutModeRule(Rule):
         FOR    ${a}    ${b}    IN ZIP    ${LIST_A}    ${LIST_B}    mode=STRICT
             Log    ${a} ${b}
         END
+
+    The fix adds ``mode=SHORTEST``, the mode RF 7.x uses when none is set,
+    so behaviour does not change. Headers with a comment or ``...`` are left
+    for a manual edit.
     """
 
     name = "for-in-zip-without-mode"
@@ -37,6 +42,19 @@ class ForInZipWithoutModeRule(Rule):
     message = "FOR IN ZIP without mode=; set STRICT, SHORTEST or LONGEST"
     severity = RuleSeverity.WARNING
     added_in_version = "0.1.0"
+    fix_availability = FixAvailability.SOMETIMES
+
+    def fix(self, diag, source_lines: list[str]) -> Fix | None:
+        line_no = diag.range.start.line
+        line = source_lines[line_no - 1].rstrip()
+        next_line = source_lines[line_no] if line_no < len(source_lines) else ""
+        if "#" in line or next_line.lstrip().startswith("..."):
+            return None
+        end_col = len(line) + 1
+        edit = TextEdit(self.rule_id, self.name, line_no, end_col, line_no, end_col,
+                        "    mode=SHORTEST")
+        return Fix(edits=[edit], message="Add mode=SHORTEST, the current default",
+                   applicability=FixApplicability.SAFE)
 
 
 class ForLoopChecker(VisitorChecker):
