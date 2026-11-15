@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import tempfile
+
+from . import __version__
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -161,7 +163,7 @@ def _to_lsp(diag, rule_id: str, line: int, severity: str, count: str = "") -> ty
 
 class RflintServer(LanguageServer):
     def __init__(self) -> None:
-        super().__init__("robotframework-lint-lsp", "0.1.0")
+        super().__init__("robotframework-lint-lsp", __version__)
         self.settings = Settings()
         self.pending: dict[str, asyncio.Task] = {}
         self.index = WorkspaceIndex()

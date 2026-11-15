@@ -264,3 +264,9 @@ def test_huge_buffer_skips_lint(monkeypatch):
                          text_document_publish_diagnostics=sent.append)
     lsp.RflintServer.publish(ls, "file:///x.robot")
     assert sent[0].diagnostics == []
+
+
+def test_server_info_version_matches_package():
+    from importlib.metadata import version
+    from robotframework_lint.lsp import RflintServer
+    assert RflintServer().version == version("robotframework-lint-lsp")
