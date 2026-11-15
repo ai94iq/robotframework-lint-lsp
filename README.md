@@ -75,6 +75,10 @@ Lint on the command line, without the agent:
 robocop check --custom-rules robotframework_lint path/to/tests
 ```
 
+`robocop list rules` has no `--custom-rules` flag. To list the RFL rules,
+put `custom_rules = ["robotframework_lint"]` under `[tool.robocop.lint]`
+in a config file and run `robocop list rules --config <file>`.
+
 ## What the agent gets
 
 | Feature | Behaviour |
@@ -105,7 +109,7 @@ Set them in `initializationOptions` of your `.lsp.json`:
 
 | ID | Name | Source |
 |---|---|---|
-| RFL001 | for-in-zip-without-mode | [RF 7.0](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.0.rst) |
+| RFL001 | for-in-zip-without-mode (auto-fix adds `mode=SHORTEST`) | [RF 7.0](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.0.rst) |
 | RFL002 | deprecated-standard-library (Telnet) | [RF 7.5](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
 | RFL003 | deprecated-tag-pattern (`XORY`, `&`) | [RF 7.5](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
 | RFL004 | deprecated-translation (French `Unités de test`, Finnish `Tagit`) | [RF 7.5](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
