@@ -22,6 +22,7 @@ back to the agent, one short line each.
 
 - [Does it help?](#does-it-help)
 - [Install](#install)
+- [If you are an agent installing this](#if-you-are-an-agent-installing-this)
 - [What the agent gets](#what-the-agent-gets)
 - [Settings](#settings)
 - [Rules](#rules)
@@ -46,28 +47,79 @@ less than the robocop MCP on all three models. Every run, version and chart:
 
 ## Install
 
-Needs Python 3.10 or later and Claude Code 2.1.275 or later.
+Needs Python 3.10 or later, [uv](https://docs.astral.sh/uv/) (or pipx) and
+Claude Code 2.1.275 or later.
 
-1. Install the package where your agent can run it:
+1. Install the server commands with uv. This puts
+   `robotframework-lint-lsp` and `robotframework-lint-autofix` in
+   `~/.local/bin`, separate from your project's own robotframework:
 
    ```bash
-   pip install robotframework-lint-lsp
+   uv tool install robotframework-lint-lsp==1.1.0
    ```
 
-   It pins robotframework 7.5.1, robotframework-robocop 9.4.0 and
-   pygls 2.1.1. To keep those pins apart, install it in a venv on PATH.
+   Alternative: `pipx install robotframework-lint-lsp`.
 
-2. Add the plugin in Claude Code:
+   The package pins robotframework 7.5.1, robotframework-robocop 9.4.0 and
+   pygls 2.1.1.
 
-   ```text
-   /plugin install robotframework-lint-lsp --marketplace ai94iq/robotframework-lint-lsp
+2. Check that the server command is on PATH:
+
+   ```bash
+   which robotframework-lint-lsp      # Windows: where robotframework-lint-lsp
    ```
 
-3. Restart Claude Code. Edit any `.robot` or `.resource` file. The
-   findings come back with the edit result.
+   It must print a path. If it prints nothing, add `~/.local/bin` to PATH
+   and open a new terminal. The plugin runs the bare command, so it fails
+   without this.
+
+3. Add the marketplace and install the plugin:
+
+   ```bash
+   claude plugin marketplace add ai94iq/robotframework-lint-lsp
+   claude plugin install robotframework-lint-lsp@robotframework-lint-lsp --scope user
+   claude plugin list
+   ```
+
+   `claude plugin list` shows `robotframework-lint-lsp` with
+   `Status: enabled`.
+
+4. Reload the plugins: run `/reload-plugins` in Claude Code, or restart it.
+   Edit any `.robot` or `.resource` file. The findings come back with the
+   edit result.
 
 To check it works, run `claude --debug-file debug.log`, then
 `grep "LSP Diagnostics: Delivering" debug.log`.
+
+## If you are an agent installing this
+
+Follow these steps in order. Each one has the result to expect. If a step
+does not match, stop and report the output to the user. Do not change the
+user's PATH or shell profile without their approval.
+
+1. Run `uv tool install robotframework-lint-lsp==1.1.0`.
+   Expected: exit code 0, and the output names `robotframework-lint-lsp`
+   and `robotframework-lint-autofix`. If `uv` is missing, use
+   `pipx install robotframework-lint-lsp` instead.
+2. Run `which robotframework-lint-lsp` (Windows: `where robotframework-lint-lsp`).
+   Expected: one path printed. If nothing prints, ask the user to add the
+   uv tool bin folder to PATH and start a new terminal.
+3. Run `claude plugin marketplace add ai94iq/robotframework-lint-lsp`.
+   Expected: the marketplace is added. If it says it is already added,
+   continue.
+4. Run `claude plugin install robotframework-lint-lsp@robotframework-lint-lsp --scope user`,
+   then `claude plugin list`.
+   Expected: a row for `robotframework-lint-lsp` with `Status: enabled`.
+5. Ask the user to run `/reload-plugins` in Claude Code, or to restart it.
+   An agent cannot do this. Wait for the user to confirm before step 6.
+6. Verify. Add a line that triggers a finding to a `.robot` file, for
+   example a `Set Test Variable` line (DEPR05), and save it.
+   Expected: the edit result or the next tool result has lines in the form
+   `RULEID message`, such as `DEPR05 Set Test Variable used instead of VAR`.
+   Diagnostics are pushed, so they can arrive one tool result late. A
+   finding that was already delivered is not shown again.
+   If nothing appears, check PATH (step 2), then the plugin status (step
+   4), then ask the user to reload again (step 5).
 
 Lint on the command line, without the agent:
 

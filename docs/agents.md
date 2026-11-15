@@ -37,7 +37,9 @@ This installs two commands. Put the venv's `Scripts` or `bin` folder on
 ## Claude Code
 
 This repo is a Claude Code plugin: `.claude-plugin/plugin.json`, `.lsp.json`
-for the server and `hooks/hooks.json` for the auto-fix hook.
+for the server and `hooks/hooks.json` for the auto-fix hook. The step-by-step
+install with expected results is in the README:
+[If you are an agent installing this](../README.md#if-you-are-an-agent-installing-this).
 
 Try it for one session:
 
