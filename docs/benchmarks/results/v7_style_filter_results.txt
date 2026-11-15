@@ -1,0 +1,28 @@
+
+deprec (n=25)
+  cost          mean  0.03231  median  0.02998  sum   0.8077
+  turns         mean    21.84  median       22  sum      546
+  seconds       mean    161.9  median    150.6  sum     4046
+  edits         mean        9  median        9  sum      225
+  robot_runs    mean     6.24  median        6  sum      156
+  mcp_calls     mean        0  median        0  sum        0
+  dryrun_fail   mean        0  median        0  sum        0
+  run_pass      mean    11.84  median       12  sum      296
+  run_fail      mean        0  median        0  sum        0
+  all_green     mean        1  median        1  sum       25
+  lint_issues   mean     5.36  median        4  sum      134
+  depr_issues   mean     0.12  median        0  sum        3
+
+style (n=25)
+  cost          mean  0.03293  median  0.03099  sum   0.8232
+  turns         mean    22.32  median       21  sum      558
+  seconds       mean    163.1  median    155.8  sum     4077
+  edits         mean      9.6  median        9  sum      240
+  robot_runs    mean     6.24  median        6  sum      156
+  mcp_calls     mean        0  median        0  sum        0
+  dryrun_fail   mean        0  median        0  sum        0
+  run_pass      mean    12.04  median       13  sum      301
+  run_fail      mean        0  median        0  sum        0
+  all_green     mean        1  median        1  sum       25
+  lint_issues   mean     3.32  median        3  sum       83
+  depr_issues   mean      0.2  median        0  sum        5
