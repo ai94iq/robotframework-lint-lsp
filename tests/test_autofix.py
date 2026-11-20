@@ -109,3 +109,34 @@ def test_fix_file_adds_zip_mode(tmp_path):
                     "        Log    ${a}\n    END\n", encoding="utf-8")
     fix_file(path)
     assert "IN ZIP    ${X}    ${Y}    mode=SHORTEST\n" in path.read_text(encoding="utf-8")
+
+
+TWO_TESTS = ("*** Test Cases ***\nA\n    Set Test Variable    ${a}    1\n"
+             "B\n    Set Test Variable    ${b}    2\n")
+
+
+def test_edit_fixes_only_the_edited_lines(tmp_path):
+    path = tmp_path / "t.robot"
+    path.write_text(TWO_TESTS, encoding="utf-8")
+    edit = "B\n    Set Test Variable    ${b}    2\n"
+    _run_hook({"tool_name": "Edit", "tool_input": {"file_path": str(path), "new_string": edit}})
+    text = path.read_text(encoding="utf-8")
+    assert "Set Test Variable    ${a}    1" in text
+    assert "VAR    ${b}    2    scope=TEST" in text
+
+
+def test_delete_only_edit_leaves_file_alone(tmp_path):
+    path = tmp_path / "t.robot"
+    path.write_text(TWO_TESTS, encoding="utf-8")
+    _run_hook({"tool_name": "Edit", "tool_input": {"file_path": str(path), "new_string": ""}})
+    assert path.read_text(encoding="utf-8") == TWO_TESTS
+
+
+def test_multiedit_fixes_each_edited_hunk(tmp_path):
+    path = tmp_path / "t.robot"
+    path.write_text(TWO_TESTS, encoding="utf-8")
+    edits = [{"new_string": "A\n    Set Test Variable    ${a}    1\n"}]
+    _run_hook({"tool_name": "MultiEdit", "tool_input": {"file_path": str(path), "edits": edits}})
+    text = path.read_text(encoding="utf-8")
+    assert "VAR    ${a}    1    scope=TEST" in text
+    assert "Set Test Variable    ${b}    2" in text

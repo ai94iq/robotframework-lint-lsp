@@ -14,7 +14,9 @@ back to the agent, one short line each.
   your own keywords.
 - Auto-fix hook (`robotframework-lint-autofix`): after each Edit or Write
   it applies robocop's safe fixes (`VAR` syntax, inline `IF`, one
-  assignment style). The agent spends no turns on them.
+  assignment style). The agent spends no turns on them. After an Edit it
+  fixes only the lines the edit wrote, so untouched lines stay out of the
+  diff; a Write fixes the whole file.
 - Rule pack: six robocop rules from the Robot Framework 7.5 release notes
   that robocop doesn't check yet.
 
@@ -137,7 +139,7 @@ in a config file and run `robocop list rules --config <file>`.
 |---|---|
 | Diagnostics | On open, save and change (debounced 0.4 s). One line per finding, `RULEID message`, at most 120 characters. At most 20 per file, then one line saying how many were cut. Warnings and errors only. |
 | Fix hints | A finding robocop can fix ends with `fix all: <command>`; fixable Info rules are raised to Warning so the agent sees them. |
-| Auto-fix | The PostToolUse hook runs robocop's safe fixes on the edited file in an isolated temp copy, keeps your line endings, and never overwrites a newer edit. |
+| Auto-fix | The PostToolUse hook runs robocop's safe fixes on the edited file in an isolated temp copy, keeps your line endings, applies them only to the lines an Edit wrote, and never overwrites a newer edit. |
 | Navigation | Definition and references matched the way Robot matches names (`say_hello` finds `Say Hello`); hover shows the signature and first doc line; workspace symbols rank exact, then prefix, then substring. At most 50 results. |
 
 On start the server indexes up to 2000 `.robot` and `.resource` files

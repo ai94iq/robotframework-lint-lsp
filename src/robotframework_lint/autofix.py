@@ -7,6 +7,7 @@ the LSP push reports whatever is left.
 
 from __future__ import annotations
 
+import difflib
 import json
 import subprocess
 import sys
@@ -20,7 +21,36 @@ ROBOT_SUFFIXES = {".robot", ".resource"}
 TIMEOUT_S = 50
 
 
-def fix_file(path: Path) -> None:
+def edited_ranges(text: str, tool_input: dict) -> list[tuple[int, int]] | None:
+    """Line ranges an Edit or MultiEdit wrote; None for a Write, which owns the whole file."""
+    if "new_string" in tool_input:
+        written = [tool_input["new_string"]]
+    elif "edits" in tool_input:
+        written = [edit.get("new_string", "") for edit in tool_input["edits"]]
+    else:
+        return None
+    text = text.replace("\r\n", "\n")
+    ranges = []
+    for block in written:
+        block = block.replace("\r\n", "\n")
+        at = text.find(block) if block else -1
+        if at >= 0:
+            start = text.count("\n", 0, at)
+            ranges.append((start, start + block.count("\n") + 1))
+    return ranges
+
+
+def keep_edited_hunks(original: str, fixed: str, ranges: list[tuple[int, int]]) -> str:
+    before = original.splitlines(keepends=True)
+    after = fixed.splitlines(keepends=True)
+    kept = []
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, before, after, autojunk=False).get_opcodes():
+        inside = any(i1 < end and max(i2, i1 + 1) > start for start, end in ranges)
+        kept += after[j1:j2] if tag != "equal" and inside else before[i1:i2]
+    return "".join(kept)
+
+
+def fix_file(path: Path, ranges: list[tuple[int, int]] | None = None) -> None:
     # -I: the hook runs inside the edited repo, which must not shadow robocop with its own module.
     robocop = [sys.executable, "-I", "-m", "robocop"]
     check_rules = [rule for rule, cmd in FIX_COMMANDS.items() if cmd.startswith("robocop check")]
@@ -41,6 +71,8 @@ def fix_file(path: Path) -> None:
         fixed = copy.read_text(encoding="utf-8")  # robocop writes the OS line ending
     if "\r\n" in original:
         fixed = fixed.replace("\n", "\r\n")
+    if ranges is not None:
+        fixed = keep_edited_hunks(original, fixed, ranges)
     # The agent may have written again while robocop ran; never overwrite the newer text.
     if fixed != original and path.read_text(encoding="utf-8", newline="") == original:
         path.write_text(fixed, encoding="utf-8", newline="")
@@ -49,12 +81,15 @@ def fix_file(path: Path) -> None:
 def main() -> int:
     try:
         payload = json.loads(sys.stdin.read())
-        path = Path(payload["tool_input"]["file_path"])
+        tool_input = payload["tool_input"]
+        path = Path(tool_input["file_path"])
     except (ValueError, KeyError, TypeError):
         return 0
     if path.suffix.lower() in ROBOT_SUFFIXES and path.is_file():
         try:
-            fix_file(path)
+            ranges = edited_ranges(path.read_text(encoding="utf-8", newline=""), tool_input)
+            if ranges != []:
+                fix_file(path, ranges)
         except (OSError, ValueError, subprocess.TimeoutExpired):
             pass  # a failed fix must never block the agent's edit
     return 0
