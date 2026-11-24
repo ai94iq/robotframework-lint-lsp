@@ -45,7 +45,7 @@ claude plugin validate .
 ## Rules for changes
 
 - **Agent output.** One line per finding, 120 characters at most, 20 findings per file by default. Changes to what the agent sees need an A/B run (`docs/benchmarks/`). The harness calls the paid `claude` CLI: ask before running it.
-- **Temp copy.** The hook and the server lint a temp copy, never the repo in place: keep `-I`, the temp cwd, `--config`/`--root` in the temp dir and `ignore_file_config=True`. Exception: the opt-in `robotcodeCommand` tier (`robotcode_tier.py`) runs on the saved file; it is off by default, uses an argument list and never a shell.
+- **Temp copy.** The hook and the server lint a temp copy, never the repo in place: keep `-I`, the temp cwd, `--config`/`--root` in the temp dir and `ignore_file_config=True`. Exception: the opt-in `robotcodeCommand` tier (`robotcode_tier.py`) runs on the saved file; it is off by default, uses an argument list and never a shell. The project's own lists come in as data only: `project_config.py` reads `select` and `ignore` from the nearest `robocop.toml` or `pyproject.toml` up to the project root, never `custom_rules`.
 - **Hook.** The hook never blocks or fails an edit: it exits 0 and never writes over a newer edit.
 - **Pins.** Dependencies are exact pins; bump them on purpose, with the full suite.
 - **ASCII.** Plain ASCII in code and docs, except real data such as translated Robot Framework terms.

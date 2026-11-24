@@ -15,6 +15,7 @@ import tempfile
 from pathlib import Path
 
 from .hints import FIX_COMMANDS
+from .project_config import rule_active, rule_filter
 
 ROBOT_SUFFIXES = {".robot", ".resource"}
 # Two robocop runs must finish inside the hook's 120 s budget.
@@ -50,11 +51,24 @@ def keep_edited_hunks(original: str, fixed: str, ranges: list[tuple[int, int]]) 
     return "".join(kept)
 
 
+def fix_runs(path: Path) -> list[list[str]]:
+    """Robocop argument lists for the fixes the file's folder keeps; an empty select would fix every rule."""
+    active = [rule for rule in FIX_COMMANDS if rule_active(rule, *rule_filter(path))]
+    selects = [arg for rule in active if FIX_COMMANDS[rule].startswith("robocop check") for arg in ("--select", rule)]
+    runs = []
+    if any(FIX_COMMANDS[rule].startswith("robocop format") for rule in active):
+        runs.append(["format", "--select", "ReplaceWithVAR", "--silent"])
+    if selects:
+        runs.append(["check", "--fix", "--custom-rules", "robotframework_lint", *selects])
+    return runs
+
+
 def fix_file(path: Path, ranges: list[tuple[int, int]] | None = None) -> None:
     # -I: the hook runs inside the edited repo, which must not shadow robocop with its own module.
     robocop = [sys.executable, "-I", "-m", "robocop"]
-    check_rules = [rule for rule, cmd in FIX_COMMANDS.items() if cmd.startswith("robocop check")]
-    selects = [arg for rule in check_rules for arg in ("--select", rule)]
+    runs = fix_runs(path)
+    if not runs:
+        return
     original = path.read_text(encoding="utf-8", newline="")
     # A temp copy keeps robocop from reading the repo's config, which can name Python rule files.
     with tempfile.TemporaryDirectory() as tmp:
@@ -64,8 +78,7 @@ def fix_file(path: Path, ranges: list[tuple[int, int]] | None = None) -> None:
         config = Path(tmp) / "robocop.toml"
         config.write_text("", encoding="utf-8")
         # Argument lists, never a shell: the path comes from the hook payload.
-        for args in (["format", "--select", "ReplaceWithVAR", "--silent"],
-                     ["check", "--fix", "--custom-rules", "robotframework_lint", *selects]):
+        for args in runs:
             subprocess.run([*robocop, *args, "--config", str(config), "--root", tmp, "--", str(copy)], cwd=tmp,
                            capture_output=True, timeout=TIMEOUT_S, check=False)
         fixed = copy.read_text(encoding="utf-8")  # robocop writes the OS line ending

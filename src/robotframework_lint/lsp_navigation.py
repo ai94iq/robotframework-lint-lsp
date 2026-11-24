@@ -10,12 +10,12 @@ from urllib.request import url2pathname
 from lsprotocol import types
 
 from .navigation import Location, WorkspaceIndex, document_symbols
+from .project_config import project_root
 
 # A huge checkout must not stall startup; files past the cap index when opened.
 MAX_FILES = 2000
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", "results"}
 SUFFIXES = {".robot", ".resource"}
-PROJECT_MARKERS = (".git", "pyproject.toml", "robot.toml")
 # A generated or binary file posing as .robot must not fill memory; open files still lint.
 MAX_BYTES = 1_000_000
 SYMBOL_KIND = {"test": types.SymbolKind.Method, "keyword": types.SymbolKind.Function,
@@ -37,12 +37,6 @@ def _robot_files(root: Path):
                 stack.append(Path(entry.path))
             elif entry.is_file() and Path(entry.name).suffix in SUFFIXES and entry.stat().st_size <= MAX_BYTES:
                 yield Path(entry.path)
-
-
-def project_root(path: Path) -> Path | None:
-    """Nearest folder at or above path that holds a project marker."""
-    return next((folder for folder in (path, *path.parents)
-                 if any((folder / marker).exists() for marker in PROJECT_MARKERS)), None)
 
 
 def scan_project_of(index: WorkspaceIndex, scanned: set[Path], uri: str) -> None:

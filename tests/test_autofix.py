@@ -97,7 +97,8 @@ def test_temp_parent_config_cannot_steer_fix(tmp_path, monkeypatch):
     (tmp_path / "pyproject.toml").write_text('[tool.robocop.lint]\nignore = ["*"]\n')
     (tmp_path / "t").mkdir()
     monkeypatch.setattr(tempfile, "tempdir", str(tmp_path / "t"))
-    path = tmp_path / "s.robot"
+    (tmp_path / "repo" / ".git").mkdir(parents=True)
+    path = tmp_path / "repo" / "s.robot"
     path.write_text(LEGACY, encoding="utf-8")
     fix_file(path)
     assert "IF    $x    Log" in path.read_text(encoding="utf-8")

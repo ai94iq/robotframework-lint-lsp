@@ -279,3 +279,23 @@ def test_var10_message_keeps_both_names():
     (var10,) = [d for d in lint_text(text, Settings(select=["VAR10"])) if d.code == "VAR10"]
     assert var10.message == ("VAR10 ${CONTRACT_IDENTIFIER_FOR_UPDATE} = ${contract identifier for update}"
                              " (first use): one variable, spell it one way")
+
+
+
+def test_open_file_follows_project_select(tmp_path):
+    from types import SimpleNamespace
+
+    from pygls.workspace import PositionCodec
+
+    from robotframework_lint import lsp
+
+    (tmp_path / "robot.toml").write_text("")
+    (tmp_path / "robocop.toml").write_text('[tool.robocop.lint]\nselect = ["VAR*"]\n')
+    sent = []
+    doc = SimpleNamespace(source=NOISY, version=1, lines=NOISY.splitlines(True))
+    ls = SimpleNamespace(workspace=SimpleNamespace(get_text_document=lambda u: doc, position_codec=PositionCodec()),
+                         settings=Settings(), index=lsp.WorkspaceIndex(), scanned=set(), robotcode={},
+                         window_log_message=lambda p: None, text_document_publish_diagnostics=sent.append)
+    ls.settings_for = lambda uri: lsp.RflintServer.settings_for(ls, uri)
+    lsp.RflintServer.publish(ls, (tmp_path / "s.robot").as_uri())
+    assert sent[0].diagnostics == []

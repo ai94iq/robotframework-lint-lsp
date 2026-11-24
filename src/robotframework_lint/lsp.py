@@ -11,7 +11,7 @@ import asyncio
 import tempfile
 
 from . import __version__
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from lsprotocol import types
@@ -22,6 +22,7 @@ from .hints import FIX_COMMANDS, FIX_HINTS, short_message
 from .lsp_navigation import register as register_navigation
 from .lsp_navigation import scan_project_of, scan_workspace
 from .navigation import WorkspaceIndex
+from .project_config import OUR_RULES, rule_filter
 from .robotcode_tier import analyze as robotcode_analyze
 
 RULES_DIR = Path(__file__).parent / "rules"
@@ -35,6 +36,8 @@ LSP_SEVERITY = {
     "error": types.DiagnosticSeverity.Error,
 }
 MAX_GROUP_LINES = 6
+# Rule groups about layout and naming; under the cap they yield to findings about behavior.
+STYLE_GROUPS = {"LEN", "SPC", "NAME", "DOC", "COM", "ORD", "TAG"}
 
 
 @dataclass
@@ -57,6 +60,13 @@ class Settings:
         group = opts.get("groupFindings", False) is True
         return cls(cap, severity, _str_list(opts.get("select")), _str_list(opts.get("ignore")), group,
                    _str_list(opts.get("robotcodeCommand")))
+
+
+def file_settings(settings: Settings, rules: tuple[list[str], list[str]]) -> Settings:
+    """Client settings narrowed by the project's lists; a project select keeps our rules on."""
+    select, ignore = rules
+    return replace(settings, select=[*select, OUR_RULES] if select else settings.select,
+                   ignore=[*settings.ignore, *ignore])
 
 
 def _str_list(value: object) -> list[str]:
@@ -95,11 +105,15 @@ def _run_robocop(text: str, suffix: str, settings: Settings) -> list:
 
 def lint_text(text: str, settings: Settings, suffix: str = ".robot") -> list[types.Diagnostic]:
     """Lint a buffer and return capped, filtered, deduplicated LSP diagnostics."""
+    groups = _collect(_run_robocop(text, suffix, settings), settings)
+    return _cap([_group_to_lsp(members) for members in groups.values()], settings)
+
+
+def _collect(found: list, settings: Settings) -> dict[str, list[tuple]]:
     floor = SEVERITY_ORDER[settings.min_severity]
     seen: set[tuple[int, str, str]] = set()
     groups: dict[str, list[tuple]] = {}
-    found = sorted(_run_robocop(text, suffix, settings), key=lambda d: (d.range.start.line, d.range.start.character))
-    for diag in found:
+    for diag in sorted(found, key=lambda d: (d.range.start.line, d.range.start.character)):
         rule_id = diag.rule.rule_id
         severity = _severity_name(diag.severity)
         # Promote only Info rules one command fixes; each promoted finding costs agents an edit turn.
@@ -114,11 +128,23 @@ def lint_text(text: str, settings: Settings, suffix: str = ".robot") -> list[typ
         seen.add(key)
         group_key = rule_id if settings.group else f"{rule_id}:{len(seen)}"
         groups.setdefault(group_key, []).append((diag, rule_id, line, severity))
-    result = [_group_to_lsp(members) for members in groups.values()]
+    return groups
+
+
+def _cap(result: list[types.Diagnostic], settings: Settings) -> list[types.Diagnostic]:
+    """Keep errors, then behavior warnings, then style, and show the kept ones in line order."""
     result.sort(key=lambda d: (d.range.start.line, d.range.start.character))
     if len(result) <= settings.max_diagnostics:
         return result
-    return result[: settings.max_diagnostics] + [_overflow(len(result) - settings.max_diagnostics, settings)]
+    kept = sorted(result, key=_tier)[: settings.max_diagnostics]
+    kept.sort(key=lambda d: (d.range.start.line, d.range.start.character))
+    return kept + [_overflow(len(result) - settings.max_diagnostics, settings)]
+
+
+def _tier(diag: types.Diagnostic) -> int:
+    if diag.severity == types.DiagnosticSeverity.Error:
+        return 0
+    return 2 if str(diag.code).rstrip("0123456789") in STYLE_GROUPS else 1
 
 
 def _overflow(hidden: int, settings: Settings) -> types.Diagnostic:
@@ -175,6 +201,11 @@ class RflintServer(LanguageServer):
         self.scanned: set[Path] = set()
         self.robotcode: dict[str, list[types.Diagnostic]] = {}  # last on-save result per uri
 
+    def settings_for(self, uri: str) -> Settings:
+        if not uri.startswith("file:"):
+            return self.settings
+        return file_settings(self.settings, rule_filter(Path(uris.to_fs_path(uri))))
+
     def publish(self, uri: str) -> None:
         doc = self.workspace.get_text_document(uri)
         suffix = ".resource" if uri.endswith(".resource") else ".robot"
@@ -185,7 +216,7 @@ class RflintServer(LanguageServer):
         try:
             scan_project_of(self.index, self.scanned, uri)
             self.index.update(uri, doc.source)
-            diagnostics = self.robotcode.get(uri, []) + lint_text(doc.source, self.settings, suffix)
+            diagnostics = self.robotcode.get(uri, []) + lint_text(doc.source, self.settings_for(uri), suffix)
             for diag in diagnostics:  # robocop columns are code points
                 diag.range = self.workspace.position_codec.range_to_client_units(doc.lines, diag.range)
         except Exception as exc:  # parse errors must not kill the server
