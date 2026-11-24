@@ -17,8 +17,8 @@ back to the agent, one short line each.
   assignment style). The agent spends no turns on them. After an Edit it
   fixes only the lines the edit wrote, so untouched lines stay out of the
   diff; a Write fixes the whole file.
-- Rule pack: six robocop rules from the Robot Framework 7.5 release notes
-  that robocop doesn't check yet.
+- Rule pack: seven robocop rules robocop doesn't check yet, each from a
+  Robot Framework release note or the User Guide (see Rules below).
 
 ## Contents
 
@@ -171,7 +171,7 @@ The project's own `robocop.toml`, or `[tool.robocop.lint]` in
 `pyproject.toml`, also picks rules: the server and the hook read its `select`
 and `ignore` lists from the config nearest to the file, up to the project root
 (the folder with `.git`, `pyproject.toml` or `robot.toml`). A `select` there
-keeps the RFL rules on; its `ignore` adds to yours. Other keys, such as
+replaces yours and keeps the RFL rules on; its `ignore` adds to yours. Other keys, such as
 `custom_rules`, are never read. A folder such as `probes/` can drop length
 rules with its own `robocop.toml` holding `ignore = ["LEN*"]`.
 
@@ -198,7 +198,8 @@ header or setting, that is, in a French or Finnish file.
 ## Other agents and editors
 
 Setup for opencode, Crush, Codex, GLM and any LSP client, and how to call
-the hook from other hook systems: [docs/agents.md](docs/agents.md).
+the hook from other hook systems: [docs/agents.md](docs/agents.md). Only
+Claude Code is tested end to end; that page gives each other setup's status.
 
 ## Development
 

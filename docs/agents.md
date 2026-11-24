@@ -22,8 +22,8 @@ Code").
 
 ```bash
 python -m venv .venv
-.venv/Scripts/python -m pip install robotframework-lint-lsp   # Windows
-.venv/bin/python -m pip install robotframework-lint-lsp       # Linux, macOS
+.venv/Scripts/python -m pip install robotframework-lint-lsp==1.2.0   # Windows
+.venv/bin/python -m pip install robotframework-lint-lsp==1.2.0       # Linux, macOS
 ```
 
 This installs two commands. Put the venv's `Scripts` or `bin` folder on
@@ -126,8 +126,8 @@ in `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.lsp_bridge]
-command = "/absolute/path/to/codex-lsp-bridge"
-args = ["serve", "--transport", "stdio", "--config", "/absolute/path/to/default.toml"]
+command = "/absolute/path/to/lsp-mcp"
+args = []  # the bridge's stdio arguments, from its README
 ```
 
 Then register `robotframework-lint-lsp` in the bridge's own config. We have
@@ -187,5 +187,5 @@ overflow 7 more findings not shown (maxDiagnostics 20)
 |---|---|---|
 | `maxDiagnostics` | 20 | findings per file, then one `overflow` line |
 | `minSeverity` | `warning` | `info`, `warning` or `error`; fixable Info rules are raised to warning |
-| `select`, `ignore` | `[]` | robocop rule ids to keep or drop |
+| `select`, `ignore` | `[]` | robocop rule ids to keep or drop; an empty `select` keeps all rules |
 | `groupFindings` | `false` | one diagnostic per rule; off because it left more findings unfixed |

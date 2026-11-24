@@ -7,7 +7,8 @@ description: Use when a .robot or .resource file is edited, when lint findings (
 
 This plugin lints `.robot` and `.resource` files after each edit. The
 language server pushes findings, and the auto-fix hook applies robocop's
-safe fixes. Both need the `robotframework-lint-lsp` command on PATH.
+safe fixes. The server needs the `robotframework-lint-lsp` command on PATH,
+the hook the `robotframework-lint-autofix` command; one install gives both.
 
 ## Reading the diagnostics
 
