@@ -166,3 +166,28 @@ def test_edit_leaves_the_next_line_alone(tmp_path):
     _run_hook({"tool_name": "Edit", "tool_input": {"file_path": str(path), "new_string": first}})
     text = path.read_text(encoding="utf-8")
     assert "VAR    ${a}    1    scope=TEST" in text and second in text
+
+
+SET_A, SET_B = "    Set Test Variable    ${a}    1\n", "    Set Test Variable    ${b}    2\n"
+
+
+def _edit(tmp_path, text: str, new_string: str) -> str:
+    path = tmp_path / "t.robot"
+    path.write_text(text, encoding="utf-8")
+    _run_hook({"tool_name": "Edit", "tool_input": {"file_path": str(path), "new_string": new_string}})
+    return path.read_text(encoding="utf-8")
+
+
+def test_edit_at_file_start_is_fixed(tmp_path):
+    head = f"*** Test Cases ***\nT\n{SET_A}"
+    assert "VAR    ${a}    1    scope=TEST" in _edit(tmp_path, head + SET_B, head)
+
+
+def test_leading_blank_line_keeps_line_numbers(tmp_path):
+    text = _edit(tmp_path, f"\n*** Test Cases ***\nT\n{SET_A}{SET_B}", SET_B)
+    assert SET_A in text and "VAR    ${b}    2    scope=TEST" in text
+
+
+def test_edit_without_final_newline_is_fixed(tmp_path):
+    text = _edit(tmp_path, f"*** Test Cases ***\nT\n{SET_A}{SET_B}", SET_B.rstrip("\n"))
+    assert SET_A in text and "VAR    ${b}    2    scope=TEST" in text
