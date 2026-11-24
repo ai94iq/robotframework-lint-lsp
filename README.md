@@ -164,6 +164,19 @@ Set them in `initializationOptions` of your `.lsp.json`:
 copy, and robotcode imports your project's libraries to resolve them. Set
 it only for projects whose code you trust. Point it at the project's own
 venv: a venv without the project's libraries reports false import errors.
+Without it, a call to a keyword that does not exist is not reported: robocop
+does not resolve keywords.
+
+The project's own `robocop.toml`, or `[tool.robocop.lint]` in
+`pyproject.toml`, also picks rules: the server and the hook read its `select`
+and `ignore` lists from the config nearest to the file, up to the project root
+(the folder with `.git`, `pyproject.toml` or `robot.toml`). A `select` there
+keeps the RFL rules on; its `ignore` adds to yours. Other keys, such as
+`custom_rules`, are never read. A folder such as `probes/` can drop length
+rules with its own `robocop.toml` holding `ignore = ["LEN*"]`.
+
+When a file has more findings than `maxDiagnostics`, errors are kept first,
+then other warnings, then style rules (LEN, SPC, NAME, DOC, COM, ORD, TAG).
 
 ## Rules
 

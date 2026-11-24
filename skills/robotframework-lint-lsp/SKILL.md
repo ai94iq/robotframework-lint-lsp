@@ -14,7 +14,14 @@ safe fixes. Both need the `robotframework-lint-lsp` command on PATH.
 - Each finding is one line: `RULEID message`, at most 120 characters.
   Example: `DEPR05 Set Test Variable used instead of VAR; fix all: robocop format --select ReplaceWithVAR <file>`.
 - At most 20 findings per file. After that, one line says how many were
-  cut. Fix the shown ones, save again, and the rest appear.
+  cut. Errors are kept first, then other warnings, then style (LEN, SPC,
+  NAME, DOC, COM, ORD, TAG). Fix the shown ones, save again, and the rest
+  appear.
+- The project's `robocop.toml` (nearest to the file) picks which rules run.
+  A rule it ignores is not reported and not auto-fixed.
+- A call to a keyword that does not exist is not reported, unless the user
+  set `robotcodeCommand` in `.lsp.json`. Without it, run
+  `robot --dryrun` to find unknown keywords.
 - A line ending in `fix all: <command>` can be fixed by running that
   command on the file. Run it, then re-read the file.
 - Only warnings and errors are shown. Info rules that robocop can fix are
