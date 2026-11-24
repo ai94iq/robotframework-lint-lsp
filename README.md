@@ -138,7 +138,7 @@ in a config file and run `robocop list rules --config <file>`.
 | Feature | Behaviour |
 |---|---|
 | Diagnostics | On open, save and change (debounced 0.4 s). One line per finding, `RULEID message`, at most 120 characters. At most 20 per file, then one line saying how many were cut. Warnings and errors only. |
-| Fix hints | A finding robocop can fix ends with `fix all: <command>`; fixable Info rules are raised to Warning so the agent sees them. |
+| Fix hints | A finding from a rule on our list of one-command fixes (DEPR03 to DEPR11, MISC04, MISC09, VAR01, RFL001) ends with `fix all: <command>`; Info rules on that list are raised to Warning so the agent sees them. |
 | Auto-fix | The PostToolUse hook runs robocop's safe fixes on the edited file in an isolated temp copy, keeps your line endings, applies them only to the lines an Edit wrote, and never overwrites a newer edit. |
 | Navigation | Definition and references matched the way Robot matches names (`say_hello` finds `Say Hello`); hover shows the signature and first doc line; workspace symbols rank exact, then prefix, then substring. At most 50 results. |
 
@@ -188,7 +188,7 @@ then other warnings, then style rules (LEN, SPC, NAME, DOC, COM, ORD, TAG).
 | RFL004 | deprecated-translation (French `Unités de test`, Finnish `Tagit`) | [RF 7.5](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
 | RFL005 | doc-tags-without-empty-row (`Tags:` in keyword docs) | [RF 7.5](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
 | RFL006 | deprecated-argument-name (`list_=`, `time_=`) | [RF 7.5](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
-| RFL007 | local-shadows-suite-variable (error: `${contract}=` hides `${CONTRACT}`) | [User Guide, Variables](https://github.com/robotframework/robotframework/blob/master/doc/userguide/src/CreatingTestData/Variables.rst) |
+| RFL007 | local-shadows-suite-variable (error: `${contract}=` hides `${CONTRACT}`; checks the same file's Variables section only, not imported resources) | [User Guide, Variables](https://github.com/robotframework/robotframework/blob/master/doc/userguide/src/CreatingTestData/Variables.rst) |
 
 RFL003 asks Robot Framework's own `TagPatterns`, so it reports exactly what
 RF 7.5.1 warns about, including all-caps tags such as `-DONOTX` that RF
