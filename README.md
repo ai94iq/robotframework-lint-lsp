@@ -57,7 +57,7 @@ Claude Code 2.1.275 or later.
    `~/.local/bin`, separate from your project's own robotframework:
 
    ```bash
-   uv tool install robotframework-lint-lsp==1.1.0
+   uv tool install robotframework-lint-lsp==1.2.0
    ```
 
    Alternative: `pipx install robotframework-lint-lsp`.
@@ -99,7 +99,7 @@ Follow these steps in order. Each one has the result to expect. If a step
 does not match, stop and report the output to the user. Do not change the
 user's PATH or shell profile without their approval.
 
-1. Run `uv tool install robotframework-lint-lsp==1.1.0`.
+1. Run `uv tool install robotframework-lint-lsp==1.2.0`.
    Expected: exit code 0, and the output names `robotframework-lint-lsp`
    and `robotframework-lint-autofix`. If `uv` is missing, use
    `pipx install robotframework-lint-lsp` instead.
