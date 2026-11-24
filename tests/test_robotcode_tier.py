@@ -61,6 +61,7 @@ def test_save_publishes_robotcode_errors_first(tmp_path):
     path = robot_file(tmp_path)
     published: list[str] = []
     ls = SimpleNamespace(root=tmp_path, robotcode={}, publish=published.append,
+                         workspace=SimpleNamespace(text_documents={path.as_uri(): object()}),
                          settings=lsp.Settings(robotcode=fake_robotcode(tmp_path, {"diagnostics": {"t.robot": [FINDING]}})))
     params = SimpleNamespace(text_document=SimpleNamespace(uri=path.as_uri()))
     asyncio.run(lsp.on_save(ls, params))

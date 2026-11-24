@@ -329,3 +329,41 @@ def test_lint_crash_is_reported_not_hidden(monkeypatch):
     (diag,) = _publish_one("x")
     assert diag.code == "lint-error" and "parser blew up" in diag.message
 
+
+
+def test_cached_robotcode_ranges_convert_once(monkeypatch):
+    from types import SimpleNamespace
+
+    from lsprotocol import types
+    from pygls.workspace import PositionCodec
+
+    from robotframework_lint import lsp
+
+    monkeypatch.setattr(lsp, "lint_text", lambda *args: [])
+    source = "    Log    \U0001F600    ${x}\n"
+    cached = types.Diagnostic(range=types.Range(types.Position(0, 16), types.Position(0, 20)), message="m")
+    sent = []
+    doc = SimpleNamespace(source=source, version=1, lines=[source])
+    ls = SimpleNamespace(workspace=SimpleNamespace(get_text_document=lambda u: doc, position_codec=PositionCodec()),
+                         index=lsp.WorkspaceIndex(), scanned=set(), robotcode={"untitled:x.robot": [cached]},
+                         settings_for=lambda uri: Settings(), text_document_publish_diagnostics=sent.append)
+    lsp.RflintServer.publish(ls, "untitled:x.robot")
+    lsp.RflintServer.publish(ls, "untitled:x.robot")
+    assert [p.diagnostics[0].range.start.character for p in sent] == [17, 17]
+
+
+def test_file_closed_during_robotcode_run_stays_clear(monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+
+    from lsprotocol import types
+
+    from robotframework_lint import lsp
+
+    uri, open_docs, published = "file:///D:/x.robot", {"file:///D:/x.robot": object()}, []
+    monkeypatch.setattr(lsp, "robotcode_analyze", lambda *args: open_docs.clear() or ["finding"])
+    ls = SimpleNamespace(settings=SimpleNamespace(robotcode=["robotcode"]), root=Path("."), robotcode={},
+                         workspace=SimpleNamespace(text_documents=open_docs), publish=published.append)
+    params = types.DidSaveTextDocumentParams(text_document=types.TextDocumentIdentifier(uri=uri))
+    asyncio.run(lsp.on_save(ls, params))
+    assert published == [] and ls.robotcode == {}

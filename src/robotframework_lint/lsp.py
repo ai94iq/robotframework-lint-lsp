@@ -8,7 +8,9 @@ information, code descriptions or data payloads.
 from __future__ import annotations
 
 import asyncio
+import copy
 import tempfile
+from urllib.parse import unquote
 
 from . import __version__
 from dataclasses import dataclass, field, replace
@@ -228,7 +230,8 @@ class RflintServer(LanguageServer):
         try:
             scan_project_of(self.index, self.scanned, uri)
             self.index.update(uri, doc.source)
-            diagnostics = self.robotcode.get(uri, []) + lint_text(doc.source, self.settings_for(uri), suffix)
+            cached = [copy.copy(diag) for diag in self.robotcode.get(uri, [])]
+            diagnostics = cached + lint_text(doc.source, self.settings_for(uri), suffix)
             for diag in diagnostics:  # robocop columns are code points
                 diag.range = self.workspace.position_codec.range_to_client_units(doc.lines, diag.range)
         except Exception as exc:  # parse errors must not kill the server
@@ -262,7 +265,10 @@ async def on_save(ls: RflintServer, params: types.DidSaveTextDocumentParams) -> 
     if ls.settings.robotcode and ls.root:
         # robotcode reads the saved file in place; a cold run takes seconds, so off the event loop.
         path = Path(uris.to_fs_path(uri))
-        ls.robotcode[uri] = await asyncio.to_thread(robotcode_analyze, ls.settings.robotcode, path, ls.root)
+        found = await asyncio.to_thread(robotcode_analyze, ls.settings.robotcode, path, ls.root)
+        if unquote(uri) not in ls.workspace.text_documents:
+            return
+        ls.robotcode[uri] = found
     ls.publish(uri)
 
 
