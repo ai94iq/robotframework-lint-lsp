@@ -48,6 +48,8 @@ def edited_ranges(text: str, tool_input: dict) -> list[tuple[int, int]] | None:
 def keep_edited_hunks(original: str, fixed: str, ranges: list[tuple[int, int]]) -> str:
     before = original.splitlines(keepends=True)
     after = fixed.splitlines(keepends=True)
+    if len(before) == len(after):
+        return "".join(after[i] if _inside(i, i + 1, ranges) else before[i] for i in range(len(before)))
     kept = []
     for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, before, after, autojunk=False).get_opcodes():
         if tag == "replace" and i2 - i1 == j2 - j1:
