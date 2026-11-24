@@ -6,7 +6,7 @@ Guidance for coding agents working in this repository.
 
 robotframework-lint-lsp is a Robot Framework linter for coding agents. One PyPI package (`robotframework-lint-lsp`, import name `robotframework_lint`) and one Claude Code plugin come from this repo:
 
-- a robocop rule pack (RFL001 to RFL006);
+- a robocop rule pack (RFL001 to RFL007);
 - `robotframework-lint-lsp`, a stdio language server (pygls) with short diagnostics and navigation;
 - `robotframework-lint-autofix`, a PostToolUse hook that applies robocop's safe fixes after each Edit or Write.
 
@@ -37,7 +37,7 @@ claude plugin validate .
 ## Adding a rule
 
 1. Find the source first: a Robot Framework release note or user guide line. A rule without a cited source is not added.
-2. Add a `Rule` subclass to the matching module in `rules/`, or a new module. Copy the shape of `rules/imports.py`: a docstring quoting the source with incorrect and correct code, `name`, the next free `rule_id` (`RFL007`, ...), `message`, `severity`, `added_in_version`.
+2. Add a `Rule` subclass to the matching module in `rules/`, or a new module. Copy the shape of `rules/imports.py`: a docstring quoting the source with incorrect and correct code, `name`, the next free `rule_id` (`RFL008`, ...), `message`, `severity`, `added_in_version`.
 3. Add samples in `tests/samples/` (one that fires, one that does not) and a test that runs the real robocop CLI on them, like `tests/test_deprecated_library.py`. See it fail before the rule exists.
 4. If robocop can fix it, add the fix command to `hints.py`.
 5. Add the rule to the Rules table in `README.md`.

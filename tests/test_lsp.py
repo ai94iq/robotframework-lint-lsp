@@ -270,3 +270,12 @@ def test_server_info_version_matches_package():
     from importlib.metadata import version
     from robotframework_lint.lsp import RflintServer
     assert RflintServer().version == version("robotframework-lint-lsp")
+
+
+def test_var10_message_keeps_both_names():
+    text = ("*** Variables ***\n${CONTRACT_IDENTIFIER_FOR_UPDATE}    C-1\n\n\n*** Test Cases ***\nT\n"
+            "    ${contract identifier for update}=    Set Variable    x\n"
+            "    Log    ${CONTRACT_IDENTIFIER_FOR_UPDATE}\n")
+    (var10,) = [d for d in lint_text(text, Settings(select=["VAR10"])) if d.code == "VAR10"]
+    assert var10.message == ("VAR10 ${CONTRACT_IDENTIFIER_FOR_UPDATE} = ${contract identifier for update}"
+                             " (first use): one variable, spell it one way")

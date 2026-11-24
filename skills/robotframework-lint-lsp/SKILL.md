@@ -51,6 +51,7 @@ a config file, then run `robocop list rules --config <file>`.
 | RFL004 | Deprecated French or Finnish translations of headers and settings (RF 7.5) |
 | RFL005 | `Tags:` in keyword documentation without an empty row (RF 7.5) |
 | RFL006 | Deprecated argument names such as `list_=` and `time_=` (RF 7.5) |
+| RFL007 | A local assignment that hides a suite variable of the same normalized name (error) |
 
 ## Troubleshooting: no diagnostics
 

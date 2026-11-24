@@ -11,3 +11,4 @@ def test_config_lists_all_rfl_rules(tmp_path):
                             capture_output=True, text=True, check=False, cwd=tmp_path)
     for n in range(1, 7):
         assert f"RFL00{n} [W]" in result.stdout
+    assert "RFL007 [E]" in result.stdout

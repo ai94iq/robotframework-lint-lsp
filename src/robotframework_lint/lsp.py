@@ -18,7 +18,7 @@ from lsprotocol import types
 from pygls import uris
 from pygls.lsp.server import LanguageServer
 
-from .hints import FIX_COMMANDS, FIX_HINTS
+from .hints import FIX_COMMANDS, FIX_HINTS, short_message
 from .lsp_navigation import register as register_navigation
 from .lsp_navigation import scan_project_of, scan_workspace
 from .navigation import WorkspaceIndex
@@ -151,7 +151,7 @@ def _to_lsp(diag, rule_id: str, line: int, severity: str, count: str = "") -> ty
     command = FIX_COMMANDS.get(rule_id)
     hint = f"fix all: {command}" if command else FIX_HINTS.get(rule_id)
     suffix = f"; {hint}" if hint else ""
-    base = f"{rule_id} {count}{diag.message}"
+    base = f"{rule_id} {count}{short_message(rule_id, diag.message)}"
     room = MAX_MESSAGE - len(suffix)
     if len(base) > room:
         base = base[: room - 3] + "..."

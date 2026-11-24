@@ -175,6 +175,7 @@ venv: a venv without the project's libraries reports false import errors.
 | RFL004 | deprecated-translation (French `Unités de test`, Finnish `Tagit`) | [RF 7.5](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
 | RFL005 | doc-tags-without-empty-row (`Tags:` in keyword docs) | [RF 7.5](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
 | RFL006 | deprecated-argument-name (`list_=`, `time_=`) | [RF 7.5](https://github.com/robotframework/robotframework/blob/master/doc/releasenotes/rf-7.5.rst) |
+| RFL007 | local-shadows-suite-variable (error: `${contract}=` hides `${CONTRACT}`) | [User Guide, Variables](https://github.com/robotframework/robotframework/blob/master/doc/userguide/src/CreatingTestData/Variables.rst) |
 
 RFL003 asks Robot Framework's own `TagPatterns`, so it reports exactly what
 RF 7.5.1 warns about, including all-caps tags such as `-DONOTX` that RF
