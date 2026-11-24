@@ -149,9 +149,9 @@ Run the same safe fixes the hook runs, after the agent edits a file:
 
 ```bash
 robocop format --select ReplaceWithVAR path/to/file.robot
-robocop check --fix --select DEPR03 --select DEPR04 --select DEPR07 --select DEPR08 \
-  --select DEPR09 --select DEPR10 --select DEPR11 --select MISC04 --select MISC09 \
-  --select VAR01 path/to/file.robot
+robocop check --fix --custom-rules robotframework_lint --select DEPR03 --select DEPR04 \
+  --select DEPR07 --select DEPR08 --select DEPR09 --select DEPR10 --select DEPR11 \
+  --select MISC04 --select MISC09 --select VAR01 --select RFL001 path/to/file.robot
 ```
 
 Or call `robotframework-lint-autofix` from any hook system that sends
@@ -186,6 +186,6 @@ overflow 7 more findings not shown (maxDiagnostics 20)
 | Setting | Default | Meaning |
 |---|---|---|
 | `maxDiagnostics` | 20 | findings per file, then one `overflow` line |
-| `minSeverity` | `warning` | `info`, `warning` or `error`; fixable Info rules are raised to warning |
+| `minSeverity` | `warning` | `info`, `warning` or `error`; Info rules with a `fix all:` command are raised to warning |
 | `select`, `ignore` | `[]` | robocop rule ids to keep or drop; an empty `select` keeps all rules |
 | `groupFindings` | `false` | one diagnostic per rule; off because it left more findings unfixed |

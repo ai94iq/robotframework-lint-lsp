@@ -25,8 +25,8 @@ the hook the `robotframework-lint-autofix` command; one install gives both.
   `robot --dryrun` to find unknown keywords.
 - A line ending in `fix all: <command>` can be fixed by running that
   command on the file. Run it, then re-read the file.
-- Only warnings and errors are shown. Info rules that robocop can fix are
-  raised to warning.
+- Only warnings and errors are shown. Info rules that have a `fix all:`
+  command are raised to warning.
 - Findings are pushed, so one can arrive on the next tool result, not the
   edit that caused it. A finding already shown is not repeated.
 
@@ -59,7 +59,7 @@ a config file, then run `robocop list rules --config <file>`.
 | RFL004 | Deprecated French or Finnish translations of headers and settings (RF 7.5) |
 | RFL005 | `Tags:` in keyword documentation without an empty row (RF 7.5) |
 | RFL006 | Deprecated argument names such as `list_=` and `time_=` (RF 7.5) |
-| RFL007 | A local assignment that hides a suite variable of the same normalized name (error) |
+| RFL007 | A local assignment that hides a suite variable of the same normalized name (error; same file's Variables section only) |
 
 ## Troubleshooting: no diagnostics
 
