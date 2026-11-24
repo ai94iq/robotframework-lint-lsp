@@ -91,11 +91,12 @@ def test_scan_skips_ignored_dirs_and_huge_files(tmp_path, monkeypatch):
     (tmp_path / "node_modules" / "x.robot").write_text("*** Keywords ***\nHidden\n    No Operation\n")
     (tmp_path / "big.robot").write_text("*** Keywords ***\nBig\n    No Operation\n" + "#" * 2000)
     (tmp_path / "ok.robot").write_text("*** Keywords ***\nShown\n    No Operation\n")
+    (tmp_path / "robot.toml").write_text("")
     monkeypatch.setattr(lsp_navigation, "MAX_BYTES", 1000)
     visited = []
     real = lsp_navigation.os.scandir
     monkeypatch.setattr(lsp_navigation.os, "scandir", lambda p: visited.append(Path(p).name) or real(p))
     index = WorkspaceIndex()
-    lsp_navigation.scan_workspace(index, tmp_path.as_uri())
+    lsp_navigation.scan_workspace(index, set(), tmp_path.as_uri())
     assert "node_modules" not in visited
     assert index.find("Shown") and not index.find("Big") and not index.find("Hidden")

@@ -20,7 +20,7 @@ from pygls.lsp.server import LanguageServer
 
 from .hints import FIX_COMMANDS, FIX_HINTS
 from .lsp_navigation import register as register_navigation
-from .lsp_navigation import scan_workspace
+from .lsp_navigation import scan_project_of, scan_workspace
 from .navigation import WorkspaceIndex
 from .robotcode_tier import analyze as robotcode_analyze
 
@@ -172,6 +172,7 @@ class RflintServer(LanguageServer):
         self.pending: dict[str, asyncio.Task] = {}
         self.index = WorkspaceIndex()
         self.root: Path | None = None
+        self.scanned: set[Path] = set()
         self.robotcode: dict[str, list[types.Diagnostic]] = {}  # last on-save result per uri
 
     def publish(self, uri: str) -> None:
@@ -182,6 +183,7 @@ class RflintServer(LanguageServer):
                 types.PublishDiagnosticsParams(uri=uri, version=doc.version, diagnostics=[]))
             return
         try:
+            scan_project_of(self.index, self.scanned, uri)
             self.index.update(uri, doc.source)
             diagnostics = self.robotcode.get(uri, []) + lint_text(doc.source, self.settings, suffix)
             for diag in diagnostics:  # robocop columns are code points
@@ -201,7 +203,7 @@ register_navigation(server)
 @server.feature(types.INITIALIZE)
 def on_initialize(ls: RflintServer, params: types.InitializeParams) -> None:
     ls.settings = Settings.from_options(params.initialization_options)
-    scan_workspace(ls.index, params.root_uri)
+    scan_workspace(ls.index, ls.scanned, params.root_uri)
     if params.root_uri:
         ls.root = Path(uris.to_fs_path(params.root_uri))
 

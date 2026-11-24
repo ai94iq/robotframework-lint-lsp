@@ -15,6 +15,7 @@ from .navigation import Location, WorkspaceIndex, document_symbols
 MAX_FILES = 2000
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", "results"}
 SUFFIXES = {".robot", ".resource"}
+PROJECT_MARKERS = (".git", "pyproject.toml", "robot.toml")
 # A generated or binary file posing as .robot must not fill memory; open files still lint.
 MAX_BYTES = 1_000_000
 SYMBOL_KIND = {"test": types.SymbolKind.Method, "keyword": types.SymbolKind.Function,
@@ -38,10 +39,34 @@ def _robot_files(root: Path):
                 yield Path(entry.path)
 
 
-def scan_workspace(index: WorkspaceIndex, root_uri: str | None) -> None:
+def project_root(path: Path) -> Path | None:
+    """Nearest folder at or above path that holds a project marker."""
+    return next((folder for folder in (path, *path.parents)
+                 if any((folder / marker).exists() for marker in PROJECT_MARKERS)), None)
+
+
+def scan_project_of(index: WorkspaceIndex, scanned: set[Path], uri: str) -> None:
+    """Index the open file's project once, so a parent folder of many checkouts never fills the cap."""
+    if not uri.startswith("file:"):
+        return
+    path = Path(url2pathname(urlparse(uri).path))
+    root = project_root(path.parent) or path.parent
+    if root not in scanned:
+        scanned.add(root)
+        _scan(index, root)
+
+
+def scan_workspace(index: WorkspaceIndex, scanned: set[Path], root_uri: str | None) -> None:
+    """Index the client's root only inside a project; a parent of many checkouts waits for opened files."""
     if not root_uri or not root_uri.startswith("file:"):
         return
     root = Path(url2pathname(urlparse(root_uri).path))
+    if project_root(root) is not None:
+        scanned.add(root)
+        _scan(index, root)
+
+
+def _scan(index: WorkspaceIndex, root: Path) -> None:
     for count, path in enumerate(_robot_files(root)):
         if count >= MAX_FILES:
             return
