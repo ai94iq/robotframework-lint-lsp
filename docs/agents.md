@@ -22,8 +22,8 @@ Code").
 
 ```bash
 python -m venv .venv
-.venv/Scripts/python -m pip install robotframework-lint-lsp==1.2.0   # Windows
-.venv/bin/python -m pip install robotframework-lint-lsp==1.2.0       # Linux, macOS
+.venv/Scripts/python -m pip install robotframework-lint-lsp==1.2.1   # Windows
+.venv/bin/python -m pip install robotframework-lint-lsp==1.2.1       # Linux, macOS
 ```
 
 This installs two commands. Put the venv's `Scripts` or `bin` folder on
