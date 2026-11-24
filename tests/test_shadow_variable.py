@@ -32,3 +32,8 @@ def test_ignores_other_names_and_suite_scope():
 def test_reports_when_variables_section_comes_last():
     output = run_robocop("shadow_variables_last.robot")
     assert "shadow_variables_last.robot:3:5 RFL007 ${contract} hides suite variable ${CONTRACT} (line 8)" in output
+
+
+def test_item_assignment_changes_suite_variable_not_hides_it():
+    output = run_robocop("shadow_item_assignment.robot")
+    assert "RFL007" not in output

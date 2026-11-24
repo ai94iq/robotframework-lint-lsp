@@ -73,6 +73,9 @@ class ShadowChecker(VisitorChecker):
             self._check(node.get_token(Token.VARIABLE))
 
     def _check(self, token):
+        """Report a local that hides a suite variable; ${X}[key]= changes X itself and creates no local."""
+        if search_variable(token.value.rstrip("= ")).items:
+            return
         suite = self.suite_variables.get(_variable_key(token.value))
         if suite is None:
             return
