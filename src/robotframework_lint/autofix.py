@@ -40,7 +40,7 @@ def edited_ranges(text: str, tool_input: dict) -> list[tuple[int, int]] | None:
         at = text.find(block)
         while at >= 0:
             start = text.count("\n", 0, at)
-            ranges.append((start, start + block.count("\n") + 1))
+            ranges.append((start, start + block.count("\n") + (0 if block.endswith("\n") else 1)))
             at = text.find(block, at + 1)
     return ranges
 
@@ -50,9 +50,17 @@ def keep_edited_hunks(original: str, fixed: str, ranges: list[tuple[int, int]]) 
     after = fixed.splitlines(keepends=True)
     kept = []
     for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, before, after, autojunk=False).get_opcodes():
-        inside = any(i1 < end and max(i2, i1 + 1) > start for start, end in ranges)
-        kept += after[j1:j2] if tag != "equal" and inside else before[i1:i2]
+        if tag == "replace" and i2 - i1 == j2 - j1:
+            kept += [after[j1 + k] if _inside(i1 + k, i1 + k + 1, ranges) else before[i1 + k]
+                     for k in range(i2 - i1)]
+        else:
+            kept += after[j1:j2] if tag != "equal" and _inside(i1, i2, ranges) else before[i1:i2]
     return "".join(kept)
+
+
+def _inside(first: int, last: int, ranges: list[tuple[int, int]]) -> bool:
+    """Whether lines first..last of the original overlap an edited range; a pure insert counts as one line."""
+    return any(first < end and max(last, first + 1) > start for start, end in ranges)
 
 
 def fix_runs(path: Path) -> list[list[str]]:

@@ -157,3 +157,12 @@ def test_edit_text_seen_twice_fixes_the_written_copy(tmp_path):
     path.write_text(f"*** Test Cases ***\nA\n{line}B\n{line}", encoding="utf-8")
     _run_hook({"tool_name": "Edit", "tool_input": {"file_path": str(path), "new_string": line}})
     assert path.read_text(encoding="utf-8").endswith("B\n    VAR    ${a}    1    scope=TEST\n")
+
+
+def test_edit_leaves_the_next_line_alone(tmp_path):
+    first, second = "    Set Test Variable    ${a}    1\n", "    Set Test Variable    ${b}    2\n"
+    path = tmp_path / "t.robot"
+    path.write_text(f"*** Test Cases ***\nT\n{first}{second}", encoding="utf-8")
+    _run_hook({"tool_name": "Edit", "tool_input": {"file_path": str(path), "new_string": first}})
+    text = path.read_text(encoding="utf-8")
+    assert "VAR    ${a}    1    scope=TEST" in text and second in text

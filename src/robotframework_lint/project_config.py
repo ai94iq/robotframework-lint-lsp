@@ -43,15 +43,19 @@ def rule_active(rule_id: str, select: list[str], ignore: list[str]) -> bool:
 
 
 def _lint_table(config: Path) -> dict | None:
+    """The lint table of a config file; robocop.toml may skip the [tool.robocop] wrapper, as robocop allows."""
     if not config.is_file():
         return None
     try:
         data = tomllib.loads(config.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
         return None
-    for key in ("tool", "robocop", "lint"):
-        data = data.get(key) if isinstance(data, dict) else None
-    return data if isinstance(data, dict) else None
+    tool = data.get("tool")
+    section = tool.get("robocop") if isinstance(tool, dict) else None
+    if not section and config.name == "robocop.toml":
+        section = data
+    lint = section.get("lint") if isinstance(section, dict) else None
+    return lint if isinstance(lint, dict) else None
 
 
 def _str_list(value: object) -> list[str]:

@@ -299,3 +299,25 @@ def test_open_file_follows_project_select(tmp_path):
     ls.settings_for = lambda uri: lsp.RflintServer.settings_for(ls, uri)
     lsp.RflintServer.publish(ls, (tmp_path / "s.robot").as_uri())
     assert sent[0].diagnostics == []
+
+
+def test_lint_crash_is_reported_not_hidden(monkeypatch):
+    from types import SimpleNamespace
+
+    from pygls.workspace import PositionCodec
+
+    from robotframework_lint import lsp
+
+    def crash(*args):
+        raise RuntimeError("parser blew up")
+
+    monkeypatch.setattr(lsp, "lint_text", crash)
+    sent = []
+    doc = SimpleNamespace(source="x", version=1, lines=["x"])
+    ls = SimpleNamespace(workspace=SimpleNamespace(get_text_document=lambda u: doc, position_codec=PositionCodec()),
+                         settings=Settings(), index=lsp.WorkspaceIndex(), scanned=set(), robotcode={},
+                         settings_for=lambda uri: Settings(), window_log_message=lambda p: None,
+                         text_document_publish_diagnostics=sent.append)
+    lsp.RflintServer.publish(ls, "untitled:x.robot")
+    (diag,) = sent[0].diagnostics
+    assert diag.code == "lint-error" and "parser blew up" in diag.message

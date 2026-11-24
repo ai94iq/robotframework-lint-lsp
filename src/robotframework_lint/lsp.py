@@ -158,6 +158,17 @@ def _overflow(hidden: int, settings: Settings) -> types.Diagnostic:
     )
 
 
+def _lint_error(exc: Exception) -> types.Diagnostic:
+    """One finding for a failed lint: an empty list would read as a clean file."""
+    return types.Diagnostic(
+        range=types.Range(types.Position(0, 0), types.Position(0, 0)),
+        message=f"lint-error linting failed, findings unknown: {exc}"[:MAX_MESSAGE],
+        severity=types.DiagnosticSeverity.Warning,
+        code="lint-error",
+        source="rflint",
+    )
+
+
 def _group_to_lsp(members: list[tuple]) -> types.Diagnostic:
     """One diagnostic per rule, anchored at its first finding, with the worst severity."""
     diag, rule_id, line, _ = members[0]
@@ -221,7 +232,7 @@ class RflintServer(LanguageServer):
                 diag.range = self.workspace.position_codec.range_to_client_units(doc.lines, diag.range)
         except Exception as exc:  # parse errors must not kill the server
             self.window_log_message(types.LogMessageParams(types.MessageType.Warning, f"rflint: {exc}"[:200]))
-            diagnostics = []
+            diagnostics = [_lint_error(exc)]
         self.text_document_publish_diagnostics(
             types.PublishDiagnosticsParams(uri=uri, version=doc.version, diagnostics=diagnostics)
         )

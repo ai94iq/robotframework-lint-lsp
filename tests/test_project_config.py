@@ -51,3 +51,9 @@ def test_hook_skips_fixes_the_folder_ignores(tmp_path):
     path.write_text(text, encoding="utf-8")
     fix_file(path)
     assert path.read_text(encoding="utf-8") == text
+
+
+def test_robocop_toml_without_tool_table(tmp_path):
+    (tmp_path / "robot.toml").write_text("")
+    (tmp_path / "robocop.toml").write_text('[lint]\nignore = ["LEN*"]\n')
+    assert rule_filter(tmp_path / "a.robot") == ([], ["LEN*"])
