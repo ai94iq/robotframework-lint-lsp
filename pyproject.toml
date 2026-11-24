@@ -31,7 +31,7 @@ Documentation = "https://github.com/ai94iq/robotframework-lint-lsp/blob/main/doc
 Issues = "https://github.com/ai94iq/robotframework-lint-lsp/issues"
 
 [project.optional-dependencies]
-dev = ["pytest==9.2.0"]
+dev = ["hypothesis==6.170.17", "pytest==9.2.0"]
 
 [project.scripts]
 robotframework-lint-lsp = "robotframework_lint.lsp:main"
