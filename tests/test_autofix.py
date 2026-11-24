@@ -141,3 +141,19 @@ def test_multiedit_fixes_each_edited_hunk(tmp_path):
     text = path.read_text(encoding="utf-8")
     assert "VAR    ${a}    1    scope=TEST" in text
     assert "Set Test Variable    ${b}    2" in text
+
+
+def test_hook_survives_null_new_string(tmp_path):
+    path = tmp_path / "t.robot"
+    path.write_text(TWO_TESTS, encoding="utf-8")
+    result = _run_hook({"tool_name": "Edit", "tool_input": {"file_path": str(path), "new_string": None}})
+    assert result.returncode == 0
+    assert path.read_text(encoding="utf-8") == TWO_TESTS
+
+
+def test_edit_text_seen_twice_fixes_the_written_copy(tmp_path):
+    line = "    Set Test Variable    ${a}    1\n"
+    path = tmp_path / "t.robot"
+    path.write_text(f"*** Test Cases ***\nA\n{line}B\n{line}", encoding="utf-8")
+    _run_hook({"tool_name": "Edit", "tool_input": {"file_path": str(path), "new_string": line}})
+    assert path.read_text(encoding="utf-8").endswith("B\n    VAR    ${a}    1    scope=TEST\n")

@@ -23,21 +23,25 @@ TIMEOUT_S = 50
 
 
 def edited_ranges(text: str, tool_input: dict) -> list[tuple[int, int]] | None:
-    """Line ranges an Edit or MultiEdit wrote; None for a Write, which owns the whole file."""
+    """Line ranges an Edit or MultiEdit wrote; None for a Write, which owns the whole file.
+
+    Text written twice in the file marks every copy: the payload does not say which copy the edit
+    wrote, and a replace_all edit wrote them all.
+    """
     if "new_string" in tool_input:
         written = [tool_input["new_string"]]
     elif "edits" in tool_input:
-        written = [edit.get("new_string", "") for edit in tool_input["edits"]]
+        written = [edit.get("new_string") for edit in tool_input["edits"] if isinstance(edit, dict)]
     else:
         return None
     text = text.replace("\r\n", "\n")
     ranges = []
-    for block in written:
-        block = block.replace("\r\n", "\n")
-        at = text.find(block) if block else -1
-        if at >= 0:
+    for block in (b.replace("\r\n", "\n") for b in written if isinstance(b, str) and b):
+        at = text.find(block)
+        while at >= 0:
             start = text.count("\n", 0, at)
             ranges.append((start, start + block.count("\n") + 1))
+            at = text.find(block, at + 1)
     return ranges
 
 

@@ -27,3 +27,8 @@ def test_ignores_other_names_and_suite_scope():
     output = run_robocop("shadow_none.robot")
     assert "RFL007" not in output
     assert "did not match" not in output
+
+
+def test_reports_when_variables_section_comes_last():
+    output = run_robocop("shadow_variables_last.robot")
+    assert "shadow_variables_last.robot:3:5 RFL007 ${contract} hides suite variable ${CONTRACT} (line 8)" in output

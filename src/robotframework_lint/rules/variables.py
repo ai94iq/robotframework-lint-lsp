@@ -2,6 +2,8 @@
 
 from robocop.linter.rules import Rule, RuleSeverity, VisitorChecker
 from robot.api import Token
+from robot.parsing.model.blocks import VariableSection
+from robot.parsing.model.statements import Variable
 from robot.utils import normalize
 from robot.variables import search_variable
 
@@ -53,12 +55,14 @@ class ShadowChecker(VisitorChecker):
     local_shadows_suite_variable: LocalShadowsSuiteVariableRule
 
     def visit_File(self, node):  # noqa: N802 - robot visitor naming
+        """Collect the Variables section first: it may come after the tests that shadow it."""
         self.suite_variables = {}
+        for section in node.sections:
+            if isinstance(section, VariableSection):
+                for item in section.body:
+                    if isinstance(item, Variable) and item.name:
+                        self.suite_variables.setdefault(_variable_key(item.name), (item.name, item.lineno))
         super().generic_visit(node)
-
-    def visit_Variable(self, node):  # noqa: N802 - robot visitor naming
-        if node.name:
-            self.suite_variables.setdefault(_variable_key(node.name), (node.name, node.lineno))
 
     def visit_KeywordCall(self, node):  # noqa: N802 - robot visitor naming
         for token in node.get_tokens(Token.ASSIGN):

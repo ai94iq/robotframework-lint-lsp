@@ -35,8 +35,16 @@ def _robot_files(root: Path):
                 continue
             if entry.is_dir() and entry.name not in SKIP_DIRS:
                 stack.append(Path(entry.path))
-            elif entry.is_file() and Path(entry.name).suffix in SUFFIXES and entry.stat().st_size <= MAX_BYTES:
+            elif entry.is_file() and Path(entry.name).suffix in SUFFIXES and _small(entry):
                 yield Path(entry.path)
+
+
+def _small(entry: os.DirEntry) -> bool:
+    """A file deleted between listing and stat is skipped, not a failed scan."""
+    try:
+        return entry.stat().st_size <= MAX_BYTES
+    except OSError:
+        return False
 
 
 def scan_project_of(index: WorkspaceIndex, scanned: set[Path], uri: str) -> None:

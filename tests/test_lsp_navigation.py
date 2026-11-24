@@ -100,3 +100,23 @@ def test_scan_skips_ignored_dirs_and_huge_files(tmp_path, monkeypatch):
     lsp_navigation.scan_workspace(index, set(), tmp_path.as_uri())
     assert "node_modules" not in visited
     assert index.find("Shown") and not index.find("Big") and not index.find("Hidden")
+
+
+def test_scan_skips_file_deleted_midway(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from robotframework_lint import lsp_navigation
+    from robotframework_lint.navigation import WorkspaceIndex
+
+    def gone():
+        raise FileNotFoundError("gone.robot")
+
+    (tmp_path / "ok.robot").write_text("*** Keywords ***\nShown\n    No Operation\n")
+    (tmp_path / "robot.toml").write_text("")
+    vanished = SimpleNamespace(name="gone.robot", path=str(tmp_path / "gone.robot"), is_symlink=lambda: False,
+                               is_dir=lambda: False, is_file=lambda: True, stat=gone)
+    real = lsp_navigation.os.scandir
+    monkeypatch.setattr(lsp_navigation.os, "scandir", lambda p: [vanished, *real(p)])
+    index = WorkspaceIndex()
+    lsp_navigation.scan_workspace(index, set(), tmp_path.as_uri())
+    assert index.find("Shown")
