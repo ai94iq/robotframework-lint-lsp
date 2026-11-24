@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "robotframework-lint-lsp"
-version = "1.1.0"
+version = "1.1.1"
 description = "Robot Framework lint for coding agents: robocop rules, an LSP server and an auto-fix hook"
 readme = "README.md"
 license = "MIT"
