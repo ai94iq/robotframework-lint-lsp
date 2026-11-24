@@ -251,7 +251,7 @@ def test_parent_config_cannot_steer_lint(tmp_path, monkeypatch):
     assert lint_text(NOISY, Settings())
 
 
-def test_huge_buffer_skips_lint(monkeypatch):
+def test_huge_buffer_is_reported_not_clean(monkeypatch):
     from types import SimpleNamespace
 
     from robotframework_lint import lsp
@@ -263,7 +263,8 @@ def test_huge_buffer_skips_lint(monkeypatch):
                          index=SimpleNamespace(update=lambda *a: None), window_log_message=lambda p: None,
                          text_document_publish_diagnostics=sent.append)
     lsp.RflintServer.publish(ls, "file:///x.robot")
-    assert sent[0].diagnostics == []
+    (diag,) = sent[0].diagnostics
+    assert diag.code == "lint-error" and "not linted" in diag.message
 
 
 def test_server_info_version_matches_package():
@@ -301,23 +302,30 @@ def test_open_file_follows_project_select(tmp_path):
     assert sent[0].diagnostics == []
 
 
-def test_lint_crash_is_reported_not_hidden(monkeypatch):
+def _publish_one(source: str):
     from types import SimpleNamespace
 
     from pygls.workspace import PositionCodec
 
     from robotframework_lint import lsp
 
-    def crash(*args):
-        raise RuntimeError("parser blew up")
-
-    monkeypatch.setattr(lsp, "lint_text", crash)
     sent = []
-    doc = SimpleNamespace(source="x", version=1, lines=["x"])
+    doc = SimpleNamespace(source=source, version=1, lines=source.splitlines(keepends=True))
     ls = SimpleNamespace(workspace=SimpleNamespace(get_text_document=lambda u: doc, position_codec=PositionCodec()),
                          settings=Settings(), index=lsp.WorkspaceIndex(), scanned=set(), robotcode={},
                          settings_for=lambda uri: Settings(), window_log_message=lambda p: None,
                          text_document_publish_diagnostics=sent.append)
     lsp.RflintServer.publish(ls, "untitled:x.robot")
-    (diag,) = sent[0].diagnostics
+    return sent[0].diagnostics
+
+
+def test_lint_crash_is_reported_not_hidden(monkeypatch):
+    from robotframework_lint import lsp
+
+    def crash(*args):
+        raise RuntimeError("parser blew up")
+
+    monkeypatch.setattr(lsp, "lint_text", crash)
+    (diag,) = _publish_one("x")
     assert diag.code == "lint-error" and "parser blew up" in diag.message
+

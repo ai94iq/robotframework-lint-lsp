@@ -158,11 +158,11 @@ def _overflow(hidden: int, settings: Settings) -> types.Diagnostic:
     )
 
 
-def _lint_error(exc: Exception) -> types.Diagnostic:
-    """One finding for a failed lint: an empty list would read as a clean file."""
+def _lint_error(reason: str) -> types.Diagnostic:
+    """One finding for a lint that did not run: an empty list would read as a clean file."""
     return types.Diagnostic(
         range=types.Range(types.Position(0, 0), types.Position(0, 0)),
-        message=f"lint-error linting failed, findings unknown: {exc}"[:MAX_MESSAGE],
+        message=f"lint-error {reason}, findings unknown"[:MAX_MESSAGE],
         severity=types.DiagnosticSeverity.Warning,
         code="lint-error",
         source="rflint",
@@ -221,8 +221,9 @@ class RflintServer(LanguageServer):
         doc = self.workspace.get_text_document(uri)
         suffix = ".resource" if uri.endswith(".resource") else ".robot"
         if len(doc.source) > MAX_LINT_BYTES:  # a generated blob would hold the event loop
+            reason = f"file over {MAX_LINT_BYTES // 1_000_000} MB not linted"
             self.text_document_publish_diagnostics(
-                types.PublishDiagnosticsParams(uri=uri, version=doc.version, diagnostics=[]))
+                types.PublishDiagnosticsParams(uri=uri, version=doc.version, diagnostics=[_lint_error(reason)]))
             return
         try:
             scan_project_of(self.index, self.scanned, uri)
@@ -232,7 +233,7 @@ class RflintServer(LanguageServer):
                 diag.range = self.workspace.position_codec.range_to_client_units(doc.lines, diag.range)
         except Exception as exc:  # parse errors must not kill the server
             self.window_log_message(types.LogMessageParams(types.MessageType.Warning, f"rflint: {exc}"[:200]))
-            diagnostics = [_lint_error(exc)]
+            diagnostics = [_lint_error(f"linting failed: {exc}")]
         self.text_document_publish_diagnostics(
             types.PublishDiagnosticsParams(uri=uri, version=doc.version, diagnostics=diagnostics)
         )
