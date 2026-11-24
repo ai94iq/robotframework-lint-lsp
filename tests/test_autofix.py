@@ -191,3 +191,8 @@ def test_leading_blank_line_keeps_line_numbers(tmp_path):
 def test_edit_without_final_newline_is_fixed(tmp_path):
     text = _edit(tmp_path, f"*** Test Cases ***\nT\n{SET_A}{SET_B}", SET_B.rstrip("\n"))
     assert SET_A in text and "VAR    ${b}    2    scope=TEST" in text
+
+
+def test_edit_without_final_newline_stops_at_its_line(tmp_path):
+    text = _edit(tmp_path, f"*** Test Cases ***\nT\n{SET_A}{SET_B}", SET_A.rstrip("\n"))
+    assert "VAR    ${a}    1    scope=TEST" in text and SET_B in text
