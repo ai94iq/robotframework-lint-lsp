@@ -141,12 +141,16 @@ def _collect(found: list, settings: Settings) -> dict[str, list[tuple]]:
 
 
 def _cap(result: list[types.Diagnostic], settings: Settings, old) -> list[types.Diagnostic]:
-    """Keep changed lines first, then errors, behavior warnings and style; show the kept ones in line order."""
-    result.sort(key=lambda d: (d.range.start.line, d.range.start.character))
+    """Keep changed lines first, then errors, behavior warnings and style.
+
+    Kept ones go out changed lines first, then in line order: Claude Code shows only the first 10.
+    """
+    order = lambda d: (old(d.range.start.line), d.range.start.line, d.range.start.character)  # noqa: E731
+    result.sort(key=order)
     if len(result) <= settings.max_diagnostics:
         return result
     kept = sorted(result, key=lambda d: (old(d.range.start.line), _tier(d)))[: settings.max_diagnostics]
-    kept.sort(key=lambda d: (d.range.start.line, d.range.start.character))
+    kept.sort(key=order)
     return kept + [_overflow(len(result) - settings.max_diagnostics, settings)]
 
 

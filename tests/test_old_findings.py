@@ -54,7 +54,7 @@ def _finding(rule, line):
 
 def test_old_finding_tagged(monkeypatch):
     monkeypatch.setattr(lsp, "_run_robocop", lambda *args: [_finding("ABC01", 1), _finding("ABC02", 2)])
-    old, new = lint_text("", Settings(), changed={1})
+    new, old = lint_text("", Settings(), changed={1})
     assert (old.message, new.message) == ("ABC01 (old) m", "ABC02 m")
 
 
@@ -98,3 +98,8 @@ def test_group_tag_follows_first_finding(monkeypatch):
     monkeypatch.setattr(lsp, "_run_robocop", lambda *args: [_finding("ABC01", 1), _finding("ABC01", 5)])
     (diag,) = lint_text("", Settings(group=True), changed={4})
     assert diag.message == "ABC01 (old) x2 (lines 1,5) m" and diag.range.start.line == 0
+
+
+def test_changed_lines_sent_first(monkeypatch):
+    monkeypatch.setattr(lsp, "_run_robocop", lambda *args: [_finding("ABC01", 1), _finding("ABC02", 9)])
+    assert [d.code for d in lint_text("", Settings(), changed={8})] == ["ABC02", "ABC01"]
