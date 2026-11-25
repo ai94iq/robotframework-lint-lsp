@@ -14,6 +14,7 @@ from .project_config import project_root
 
 # A huge checkout must not stall startup; files past the cap index when opened.
 MAX_FILES = 2000
+MAX_ENTRIES = 50_000
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", "results"}
 SUFFIXES = {".robot", ".resource"}
 # A generated or binary file posing as .robot must not fill memory; open files still lint.
@@ -23,13 +24,14 @@ SYMBOL_KIND = {"test": types.SymbolKind.Method, "keyword": types.SymbolKind.Func
 
 
 def _robot_files(root: Path):
-    """Prunes skipped dirs before descending and never follows links out of the tree."""
-    stack = [root]
-    while stack:
+    """Prunes skipped dirs before descending, never follows links out of the tree, stops after MAX_ENTRIES."""
+    stack, visited = [root], 0
+    while stack and visited < MAX_ENTRIES:
         try:
             entries = list(os.scandir(stack.pop()))
         except OSError:
             continue
+        visited += len(entries)
         for entry in entries:
             if entry.is_symlink():
                 continue

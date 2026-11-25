@@ -6,6 +6,7 @@ from importlib import metadata
 import json
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -239,6 +240,9 @@ def _next_publish(stream):
 def _open_server(uri, text):
     proc = subprocess.Popen([sys.executable, "-m", "robotframework_lint.lsp"],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    watchdog = threading.Timer(60, proc.kill)
+    watchdog.daemon = True
+    watchdog.start()
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize",
                        "params": {"processId": None, "rootUri": None, "capabilities": {}}}).encode()
     proc.stdin.write(f"Content-Length: {len(body)}\r\n\r\n".encode() + body)
