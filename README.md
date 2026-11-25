@@ -175,8 +175,11 @@ replaces yours and keeps the RFL rules on; its `ignore` adds to yours. Other key
 `custom_rules`, are never read. A folder such as `probes/` can drop length
 rules with its own `robocop.toml` holding `ignore = ["LEN*"]`.
 
-When a file has more findings than `maxDiagnostics`, errors are kept first,
-then other warnings, then style rules (LEN, SPC, NAME, DOC, COM, ORD, TAG).
+When a file has more findings than `maxDiagnostics`, findings on lines
+changed since git HEAD are kept first; then errors, other warnings, and
+style rules (LEN, SPC, NAME, DOC, COM, ORD, TAG). A finding on a line that
+is unchanged since HEAD reads `RULEID (old) message`: it was there before
+the edit. Outside git, or for an untracked file, nothing is tagged.
 
 ## Rules
 

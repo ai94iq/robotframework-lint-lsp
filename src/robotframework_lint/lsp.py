@@ -20,6 +20,7 @@ from lsprotocol import types
 from pygls import uris
 from pygls.lsp.server import LanguageServer
 
+from .changed_lines import changed_lines
 from .hints import FIX_COMMANDS, FIX_HINTS, short_message
 from .lsp_navigation import register as register_navigation
 from .lsp_navigation import scan_project_of, scan_workspace
@@ -105,10 +106,16 @@ def _run_robocop(text: str, suffix: str, settings: Settings) -> list:
         return list(linter.run_check(SourceFile(path=path, config=manager.default_config)))
 
 
-def lint_text(text: str, settings: Settings, suffix: str = ".robot") -> list[types.Diagnostic]:
-    """Lint a buffer and return capped, filtered, deduplicated LSP diagnostics."""
+def lint_text(text: str, settings: Settings, suffix: str = ".robot",
+              changed: set[int] | None = None) -> list[types.Diagnostic]:
+    """Lint a buffer and return capped, filtered, deduplicated LSP diagnostics.
+
+    With `changed` (buffer lines edited since git HEAD), findings on other lines are tagged
+    "(old)" and kept last under the cap; None means the changes are unknown and tags nothing.
+    """
     groups = _collect(_run_robocop(text, suffix, settings), settings)
-    return _cap([_group_to_lsp(members) for members in groups.values()], settings)
+    old = (lambda line: line not in changed) if changed is not None else (lambda line: False)
+    return _cap([_group_to_lsp(members, old(members[0][2])) for members in groups.values()], settings, old)
 
 
 def _collect(found: list, settings: Settings) -> dict[str, list[tuple]]:
@@ -133,12 +140,12 @@ def _collect(found: list, settings: Settings) -> dict[str, list[tuple]]:
     return groups
 
 
-def _cap(result: list[types.Diagnostic], settings: Settings) -> list[types.Diagnostic]:
-    """Keep errors, then behavior warnings, then style, and show the kept ones in line order."""
+def _cap(result: list[types.Diagnostic], settings: Settings, old) -> list[types.Diagnostic]:
+    """Keep changed lines first, then errors, behavior warnings and style; show the kept ones in line order."""
     result.sort(key=lambda d: (d.range.start.line, d.range.start.character))
     if len(result) <= settings.max_diagnostics:
         return result
-    kept = sorted(result, key=_tier)[: settings.max_diagnostics]
+    kept = sorted(result, key=lambda d: (old(d.range.start.line), _tier(d)))[: settings.max_diagnostics]
     kept.sort(key=lambda d: (d.range.start.line, d.range.start.character))
     return kept + [_overflow(len(result) - settings.max_diagnostics, settings)]
 
@@ -171,15 +178,15 @@ def _lint_error(reason: str) -> types.Diagnostic:
     )
 
 
-def _group_to_lsp(members: list[tuple]) -> types.Diagnostic:
+def _group_to_lsp(members: list[tuple], old: bool) -> types.Diagnostic:
     """One diagnostic per rule, anchored at its first finding, with the worst severity."""
     diag, rule_id, line, _ = members[0]
     severity = max((m[3] for m in members), key=SEVERITY_ORDER.__getitem__)
-    count = ""
+    count = "(old) " if old else ""
     if len(members) > 1:
         lines = [str(m[2] + 1) for m in members[:MAX_GROUP_LINES]]
         more = ",..." if len(members) > MAX_GROUP_LINES else ""
-        count = f"x{len(members)} (lines {','.join(lines)}{more}) "
+        count += f"x{len(members)} (lines {','.join(lines)}{more}) "
     return _to_lsp(diag, rule_id, line, severity, count)
 
 
@@ -202,6 +209,10 @@ def _to_lsp(diag, rule_id: str, line: int, severity: str, count: str = "") -> ty
         code=rule_id,
         source="rflint",
     )
+
+
+def _changed_since_head(uri: str, text: str) -> set[int] | None:
+    return changed_lines(Path(uris.to_fs_path(uri)), text) if uri.startswith("file:") else None
 
 
 class RflintServer(LanguageServer):
@@ -231,7 +242,8 @@ class RflintServer(LanguageServer):
             scan_project_of(self.index, self.scanned, uri)
             self.index.update(uri, doc.source)
             cached = [copy.copy(diag) for diag in self.robotcode.get(uri, [])]
-            diagnostics = cached + lint_text(doc.source, self.settings_for(uri), suffix)
+            diagnostics = cached + lint_text(doc.source, self.settings_for(uri), suffix,
+                                             changed=_changed_since_head(uri, doc.source))
             for diag in diagnostics:  # robocop columns are code points
                 diag.range = self.workspace.position_codec.range_to_client_units(doc.lines, diag.range)
         except Exception as exc:  # parse errors must not kill the server

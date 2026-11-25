@@ -15,9 +15,11 @@ the hook the `robotframework-lint-autofix` command; one install gives both.
 - Each finding is one line: `RULEID message`, at most 120 characters.
   Example: `DEPR05 Set Test Variable used instead of VAR; fix all: robocop format --select ReplaceWithVAR <file>`.
 - At most 20 findings per file. After that, one line says how many were
-  cut. Errors are kept first, then other warnings, then style (LEN, SPC,
-  NAME, DOC, COM, ORD, TAG). Fix the shown ones, save again, and the rest
-  appear.
+  cut. Findings on lines changed since git HEAD are kept first, then
+  errors, then other warnings, then style (LEN, SPC, NAME, DOC, COM, ORD,
+  TAG). Fix the shown ones, save again, and the rest appear.
+- `RULEID (old) message`: the line is unchanged since git HEAD, so the
+  finding was there before your edit. Fix findings without `(old)` first.
 - The project's `robocop.toml` (nearest to the file) picks which rules run.
   A rule it ignores is not reported and not auto-fixed.
 - A call to a keyword that does not exist is not reported, unless the user
@@ -36,6 +38,18 @@ the hook the `robotframework-lint-autofix` command; one install gives both.
 - Do not add `# robocop: off` or disable rules to hide a finding.
 - After lint fixes, run `robot --dryrun` on the suite. A lint fix must not
   change test results.
+
+## Finding keywords and variables
+
+Use the LSP tool, not grep, to find where a keyword or variable is
+defined or used. The server follows `Resource` imports, and Robot names
+ignore case, spaces and underscores, which grep misses.
+
+- `workspaceSymbol` with a keyword name: where it is defined.
+- `goToDefinition` on a keyword call or `${VAR}`: its definition, also
+  through a chain of imported resources.
+- `hover` on a keyword call: its arguments and first documentation line.
+- `findReferences` on a keyword: every call to it.
 
 ## Linting from the command line
 

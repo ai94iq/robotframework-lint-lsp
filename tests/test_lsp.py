@@ -322,7 +322,7 @@ def _publish_one(source: str):
 def test_lint_crash_is_reported_not_hidden(monkeypatch):
     from robotframework_lint import lsp
 
-    def crash(*args):
+    def crash(*args, **kwargs):
         raise RuntimeError("parser blew up")
 
     monkeypatch.setattr(lsp, "lint_text", crash)
@@ -339,7 +339,7 @@ def test_cached_robotcode_ranges_convert_once(monkeypatch):
 
     from robotframework_lint import lsp
 
-    monkeypatch.setattr(lsp, "lint_text", lambda *args: [])
+    monkeypatch.setattr(lsp, "lint_text", lambda *args, **kwargs: [])
     source = "    Log    \U0001F600    ${x}\n"
     cached = types.Diagnostic(range=types.Range(types.Position(0, 16), types.Position(0, 20)), message="m")
     sent = []
