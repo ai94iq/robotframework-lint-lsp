@@ -18,7 +18,8 @@ def head_text(path: Path) -> str | None:
     """The file's text at HEAD; None when git, the repo or the tracked file is missing."""
     command = ["git", "-c", "core.fsmonitor=false", "-C", str(path.parent), "show", f"HEAD:./{path.name}"]
     try:
-        shown = subprocess.run(command, capture_output=True, timeout=GIT_TIMEOUT_S, check=False)
+        shown = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, timeout=GIT_TIMEOUT_S,
+                               check=False)
     except (OSError, subprocess.TimeoutExpired):
         return None
     if shown.returncode != 0:

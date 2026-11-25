@@ -68,3 +68,20 @@ def test_save_publishes_robotcode_errors_first(tmp_path):
     assert published == [path.as_uri()]
     assert [d.code for d in ls.robotcode[path.as_uri()]] == ["KeywordNotFound"]
     assert lsp.Settings.from_options({"robotcodeCommand": ["rc"]}).robotcode == ["rc"]
+
+
+def test_child_never_shares_server_stdin(tmp_path, monkeypatch):
+    import subprocess
+
+    from robotframework_lint import changed_lines, robotcode_tier
+
+    seen = []
+
+    def run(*args, **kwargs):
+        seen.append(kwargs.get("stdin"))
+        raise OSError("not started")
+
+    monkeypatch.setattr(subprocess, "run", run)
+    analyze(["robotcode"], robot_file(tmp_path), tmp_path)
+    changed_lines.head_text(robot_file(tmp_path))
+    assert seen == [subprocess.DEVNULL, subprocess.DEVNULL] and robotcode_tier.subprocess is subprocess

@@ -7,6 +7,7 @@ import json
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -260,13 +261,16 @@ def test_change_save_close_each_publish(tmp_path):
         _send(proc, "textDocument/didChange", {"textDocument": {"uri": uri, "version": 2},
                                                 "contentChanges": [{"text": text + "\n"}]})
         changed = _next_publish(proc.stdout)
+        began = time.perf_counter()
         _send(proc, "textDocument/didSave", {"textDocument": {"uri": uri}})
         saved = _next_publish(proc.stdout)
+        save_seconds = time.perf_counter() - began
         _send(proc, "textDocument/didClose", {"textDocument": {"uri": uri}})
         closed = _next_publish(proc.stdout)
     finally:
         proc.kill()
     assert changed["version"] == 2 and saved["diagnostics"] and closed["diagnostics"] == []
+    assert save_seconds < 3, "a child process held the server's stdin pipe"
 
 
 def test_hint_room_is_limit_minus_hint(monkeypatch):

@@ -26,7 +26,8 @@ def analyze(command: list[str], path: Path, root: Path) -> list[types.Diagnostic
     try:
         # Argument list, never a shell: the path comes from the client.
         result = subprocess.run([*command, "--format", "json", "analyze", "code", str(path)],
-                                cwd=root, capture_output=True, text=True, timeout=TIMEOUT_S, check=False)
+                                cwd=root, stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                                timeout=TIMEOUT_S, check=False)
         report = json.loads(result.stdout)
     except (OSError, subprocess.SubprocessError, ValueError):
         return []
