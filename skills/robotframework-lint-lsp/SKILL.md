@@ -81,7 +81,7 @@ Check in this order and stop at the first failure:
 
 1. PATH: run `which robotframework-lint-lsp` (Windows: `where
    robotframework-lint-lsp`). No path means the server is not installed or
-   not on PATH. Install it with `uv tool install robotframework-lint-lsp==1.3.0`
+   not on PATH. Install it with `uv tool install robotframework-lint-lsp==1.3.1`
    and fix PATH. Do not change PATH without the user's approval.
 2. Plugin: run `claude plugin list`. The row for `robotframework-lint-lsp`
    must show `Status: enabled`. If not, run
